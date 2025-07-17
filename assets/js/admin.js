@@ -136,9 +136,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = e.target.dataset.id;
             if (e.target.matches('.btn-edit')) {
                 const meal = await api.get('manage_meal.php', { action: 'get_single', id });
+                // Form alanlarını doldur
                 Object.keys(meal).forEach(key => {
                     const input = mealForm.querySelector(`[name="${key}"]`);
-                    if (input) input.value = meal[key];
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            // Gelen değer 1, '1', veya true ise işaretle
+                            input.checked = !!parseInt(meal[key], 10);
+                        } else {
+                            input.value = meal[key];
+                        }
+                    }
                 });
                 mealForm.querySelector('[name="meal_id"]').value = meal.id;
                 openModal('Yemek Düzenle');
@@ -167,4 +175,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     refreshAllMealData();
+
+    // --- İŞLEM KAYITLARI BÖLÜMÜ ---
+    const logsTab = document.querySelector('.tab-link[data-tab="tab-logs"]');
+    if (logsTab) {
+        const logsTableBody = document.querySelector('#logs-table tbody');
+        let logsLoaded = false;
+
+        const loadLogs = async () => {
+            if (!logsTableBody) return;
+            logsTableBody.innerHTML = '<tr><td colspan="4">Yükleniyor...</td></tr>';
+            const result = await api.get('get_logs.php');
+            if (result.success) {
+                logsTableBody.innerHTML = result.data.map(log => `
+                    <tr>
+                        <td>${log.created_at_formatted}</td>
+                        <td>${log.admin_username}</td>
+                        <td>${log.action}</td>
+                        <td>${log.details}</td>
+                    </tr>
+                `).join('');
+            } else {
+                logsTableBody.innerHTML = `<tr><td colspan="4">${result.message}</td></tr>`;
+            }
+            logsLoaded = true;
+        };
+
+        logsTab.addEventListener('click', () => {
+            if (!logsLoaded) {
+                loadLogs();
+            }
+        });
+    }
 });

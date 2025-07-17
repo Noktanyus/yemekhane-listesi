@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const prevMonthBtn = document.getElementById('prev-month-btn');
     const nextMonthBtn = document.getElementById('next-month-btn');
     const loadingSpinner = document.getElementById('loading-spinner');
+    const goToTodayBtn = document.getElementById('go-to-today-btn');
+    const printBtn = document.getElementById('print-btn');
 
     // Yemek Detay Modalı Elementleri
     const detailsModal = document.getElementById('meal-details-modal');
@@ -119,13 +121,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 data.menu.forEach(meal => {
                     totalCalories += Number(meal.calories) || 0;
+
+                    // Diyet ve Alerjen ikonlarını oluştur
+                    let iconsHTML = '<div class="diet-icons">';
+                    if (parseInt(meal.is_vegetarian, 10)) {
+                        iconsHTML += `<span class="diet-icon vegetarian" title="Vejetaryen"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8a8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8 8 8 0 0 0 8-8zM4.404 6.57C5.38 5.582 6.687 5 8 5s2.62.582 3.596 1.57c.43.429.436 1.13.016 1.562l-.29.289-.014.014c-.434.434-1.132.43-1.562-.016C9.438 7.998 8.748 7.5 8 7.5s-1.438.498-1.834 1.019c-.43.446-1.128.45-1.562.016l-.014-.014-.29-.289c-.42-.432-.414-1.133.016-1.562z"/></svg></span>`;
+                    }
+                    if (parseInt(meal.is_gluten_free, 10)) {
+                        iconsHTML += `<span class="diet-icon gluten-free" title="Glütensiz"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1.753 9.144a.5.5 0 0 1 .447.276l.223.445.223.445.222.445.223.445a.5.5 0 0 1-.894.448l-.445-.223-.445-.222-.445-.223-.446-.222a.5.5 0 0 1 .276-.947zM2.85 8.013a.5.5 0 0 1 .447.276l.445.223.445.222.445.223.446.222a.5.5 0 0 1-.448.894l-.223-.445-.222-.445-.223-.445-.222-.445a.5.5 0 0 1 .276-.947zm1.107-1.107a.5.5 0 0 1 .447.276l.223.445.223.445.222.445.223.445a.5.5 0 0 1-.894.448l-.445-.223-.445-.222-.445-.223-.446-.222a.5.5 0 0 1 .276-.947zM5.063 5.8a.5.5 0 0 1 .447.276l.445.223.445.222.445.223.446.222a.5.5 0 0 1-.448.894l-.223-.445-.222-.445-.223-.445-.222-.445a.5.5 0 0 1 .276-.947zM6.17 4.693a.5.5 0 0 1 .447.276l.223.445.223.445.222.445.223.445a.5.5 0 0 1-.894.448l-.445-.223-.445-.222-.445-.223-.446-.222a.5.5 0 0 1 .276-.947zM7.277 3.586a.5.5 0 0 1 .447.276l.445.223.445.222.445.223.446.222a.5.5 0 0 1-.448.894l-.223-.445-.222-.445-.223-.445-.222-.445a.5.5 0 0 1 .276-.947zM8.384 2.48a.5.5 0 0 1 .447.276l.223.445.223.445.222.445.223.445a.5.5 0 0 1-.894.448l-.445-.223-.445-.222-.445-.223-.446-.222a.5.5 0 0 1 .276-.947zM9.49 1.373a.5.5 0 0 1 .447.276l.445.223.445.222.445.223.446.222a.5.5 0 0 1-.448.894l-.223-.445-.222-.445-.223-.445-.222-.445a.5.5 0 0 1 .276-.947zM11.4 1.937a.5.5 0 0 1 .276.947l-.446.222-.445.223-.445.222-.445.223a.5.5 0 0 1-.448-.894l.223-.445.222-.445.223-.445.222-.445a.5.5 0 0 1 .947.276zM12.508 3.044a.5.5 0 0 1 .276.947l-.446.222-.445.223-.445.222-.445.223a.5.5 0 0 1-.448-.894l.223-.445.222-.445.223-.445.222-.445a.5.5 0 0 1 .947.276zM13.615 4.15a.5.5 0 0 1 .276.947l-.446.222-.445.223-.445.222-.445.223a.5.5 0 0 1-.448-.894l.223-.445.222-.445.223-.445.222-.445a.5.5 0 0 1 .947.276zM14.722 5.258a.5.5 0 0 1 .276.947l-.446.222-.445.223-.445.222-.445.223a.5.5 0 0 1-.448-.894l.223-.445.222-.445.223-.445.222-.445a.5.5 0 0 1 .947.276z"/></svg></span>`;
+                    }
+                    if (parseInt(meal.has_allergens, 10)) {
+                        iconsHTML += `<span class="diet-icon allergen" title="Alerjen İçerir"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg></span>`;
+                    }
+                    iconsHTML += '</div>';
+
                     const ingredientsHTML = meal.ingredients 
                         ? `<details><summary>İçeriği Göster</summary><p>${meal.ingredients}</p></details>` 
                         : '<p>İçerik bilgisi girilmemiş.</p>';
 
                     modalBody.innerHTML += `
                         <div class="meal-detail">
-                            <h4>${meal.name}</h4>
+                            <div class="meal-header">
+                                <h4>${meal.name}</h4>
+                                ${iconsHTML}
+                            </div>
                             <p><strong>Kalori:</strong> ${meal.calories || 'Belirtilmemiş'}</p>
                             ${ingredientsHTML}
                         </div>
@@ -197,6 +216,44 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDate = new Date(newYear, newMonth, 1);
         renderCalendar(currentDate);
         datePickerModal.classList.add('hidden');
+    });
+
+    goToTodayBtn.addEventListener('click', () => {
+        currentDate = new Date();
+        renderCalendar(currentDate);
+    });
+
+    printBtn.addEventListener('click', () => {
+        const monthName = monthYearEl.textContent;
+        const calendarHTML = calendarGrid.innerHTML;
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Yazdırılabilir Menü - ${monthName}</title>
+                    <link rel="stylesheet" href="assets/css/print.css">
+                    <style>
+                        @media print {
+                            @page { size: A4 landscape; }
+                            body { margin: 1cm; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${monthName} Yemek Menüsü</h1>
+                    <div id="calendar-grid">${calendarHTML}</div>
+                    <script>
+                        // Tarayıcının stili işlemesi için kısa bir gecikme
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 250);
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
     });
 
     renderCalendar(currentDate);

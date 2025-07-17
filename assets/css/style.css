@@ -25,6 +25,30 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+.main-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.control-btn {
+    background-color: var(--white);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+.control-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -295,10 +319,42 @@ footer {
     margin-bottom: 0;
 }
 
+.meal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
 #modal-body h4 {
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     color: var(--secondary-color);
 }
+
+.diet-icons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.diet-icon {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.diet-icon svg {
+    width: 14px;
+    height: 14px;
+    color: white;
+}
+
+.diet-icon.vegetarian { background-color: #2ecc71; } /* Yeşil */
+.diet-icon.gluten-free { background-color: #f39c12; } /* Turuncu */
+.diet-icon.allergen { background-color: #e74c3c; } /* Kırmızı */
 
 #modal-body p {
     margin: 0.2rem 0;
