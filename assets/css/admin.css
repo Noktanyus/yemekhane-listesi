@@ -1,0 +1,360 @@
+/* =================================
+   ADMIN PANEL MODERN UI REFRESH
+   ================================= */
+
+/* --- Değişkenler & Global Ayarlar --- */
+:root {
+    --admin-primary: #2c3e50; /* Koyu Mavi */
+    --admin-secondary: #3498db; /* Parlak Mavi */
+    --admin-accent: #e74c3c; /* Silme için Kırmızı */
+    --admin-success: #2ecc71; /* Ekleme/Başarı için Yeşil */
+    --admin-light-bg: #ecf0f1;
+    --admin-white: #ffffff;
+    --admin-border: #bdc3c7;
+    --admin-text: #34495e;
+    --admin-text-light: #7f8c8d;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: var(--admin-white);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    border-bottom: 3px solid var(--admin-primary);
+}
+
+.admin-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--admin-primary);
+}
+
+.admin-header a.logout-link {
+    color: var(--admin-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 1rem;
+    transition: color 0.2s ease;
+}
+.admin-header a.logout-link:hover {
+    color: var(--admin-primary);
+}
+
+.help-button {
+    background-color: var(--admin-text-light);
+    color: var(--admin-white);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 1rem;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.help-button:hover {
+    background-color: var(--admin-primary);
+    transform: scale(1.1);
+}
+
+.admin-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* --- Sekmeler --- */
+.tabs {
+    display: flex;
+    border-bottom: 2px solid #dce1e4;
+    margin-bottom: 1.5rem;
+}
+
+.tab-link {
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--admin-text-light);
+    border-bottom: 3px solid transparent;
+    transition: color 0.3s, border-color 0.3s;
+    margin-bottom: -2px;
+}
+
+.tab-link.active {
+    color: var(--admin-primary);
+    border-bottom-color: var(--admin-primary);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: tab-fade-in 0.5s ease; }
+@keyframes tab-fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Butonlar --- */
+.btn, .btn-primary, .btn-edit, .btn-delete, .btn-edit-day, .btn-add-meal, .btn-submit, .week-navigation button {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.btn-primary { background-color: var(--admin-primary); color: white; }
+.btn-primary:hover { background-color: #34495e; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(44, 62, 80, 0.2); }
+
+.btn-submit { width: 100%; background-color: var(--admin-primary); color: white; padding: 0.8rem; font-size: 1rem; }
+.btn-submit:hover { background-color: #34495e; }
+
+.btn-edit, .btn-edit-day { background-color: var(--admin-secondary); color: white; }
+.btn-edit:hover, .btn-edit-day:hover { background-color: #2980b9; }
+
+.btn-delete { background-color: var(--admin-accent); color: white; }
+.btn-delete:hover { background-color: #c0392b; }
+
+.btn-add-meal { background-color: var(--admin-success); color: white; }
+.btn-add-meal:hover { background-color: #27ae60; }
+
+/* --- Tarih Yönetimi --- */
+.date-management-layout {
+    display: grid;
+    grid-template-columns: minmax(350px, 1fr) 1.5fr;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.week-view-container, .edit-form-container {
+    background: var(--admin-white);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.week-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--admin-light-bg);
+}
+.week-navigation button { padding: 0.4rem 0.8rem; }
+
+#week-range { font-weight: 500; color: var(--admin-primary); font-size: 1.1rem; }
+
+.week-view-list .day-card {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid var(--admin-border);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+.week-view-list .day-card:hover { border-color: var(--admin-secondary); background-color: #f1f2f6; }
+
+.day-card .date-info { font-weight: 500; }
+.day-card .menu-summary { font-size: 0.9rem; color: var(--admin-text-light); }
+.day-card .menu-summary.special { color: var(--admin-accent); font-weight: 500; }
+
+#meal-inputs-container {
+    margin-bottom: 1.5rem;
+}
+
+/* --- Formlar --- */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--admin-text); }
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #fdfdfd;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--admin-secondary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.diet-options {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.meal-input-group { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
+.btn-remove-meal { background: var(--admin-accent); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; flex-shrink: 0; }
+
+.new-meal-label {
+    background-color: var(--admin-success);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 5px;
+}
+
+.btn-add-details {
+    background-color: var(--admin-secondary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 5px;
+}
+.btn-add-details:hover {
+    background-color: #2980b9;
+}
+
+/* --- Tablo --- */
+.table-container {
+    background: var(--admin-white);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    margin-top: 1.5rem;
+    overflow-x: auto;
+}
+
+#meals-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#meals-table th, #meals-table td {
+    padding: 0.9rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--admin-light-bg);
+}
+
+#meals-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: var(--admin-text);
+}
+
+#meals-table tbody tr:hover {
+    background-color: #fdfdfd;
+}
+
+/* --- Modal --- */
+.modal-content {
+    background-color: var(--admin-white);
+    padding: 2rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: modal-fade-in 0.3s ease;
+}
+.modal-close {
+    position: absolute; top: 10px; right: 15px; color: #aaa;
+    font-size: 28px; font-weight: bold; border: none; background: none; cursor: pointer;
+}
+
+/* --- Giriş Sayfası --- */
+.login-container {
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
+    background: var(--admin-light-bg);
+}
+.login-form {
+    background: var(--admin-white); padding: 2.5rem; border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    width: 100%; max-width: 400px; text-align: center;
+}
+.login-form h2 { color: var(--admin-primary); margin-bottom: 0.5rem; }
+.login-form p { margin-bottom: 1.5rem; color: #666; }
+
+/* Form gruplarının içini sola hizala */
+.login-form .form-group {
+    text-align: left;
+}
+
+.login-form .btn-submit { background-color: var(--admin-primary); }
+.login-form .btn-submit:hover { background-color: #34495e; }
+
+/* --- Cevap Mesajları --- */
+#form-response {
+    margin-top: 1rem; padding: 1rem; border-radius: 8px; text-align: center;
+}
+#form-response.success { background: #d4edda; color: #155724; }
+#form-response.error { background: #f8d7da; color: #721c24; }
+
+.hidden {
+    display: none !important;
+}
+
+/* --- Bildirim (Toast) Stilleri --- */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: slideIn 0.5s forwards, fadeOut 0.5s 4s forwards;
+}
+
+.toast.success {
+    background-color: var(--admin-success);
+}
+
+.toast.error {
+    background-color: var(--admin-accent);
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}

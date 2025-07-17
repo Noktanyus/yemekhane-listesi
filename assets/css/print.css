@@ -1,0 +1,96 @@
+/* assets/css/print.css */
+@media print {
+    body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.4;
+    color: #333;
+    background-color: #fff;
+    margin: 15px;
+}
+
+h1 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 15px;
+    color: #005a9c;
+}
+
+#calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border: 1px solid #ccc;
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+.weekday-header, .calendar-day {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: left;
+    vertical-align: top;
+    min-height: 110px;
+    /* İçerik taşmasını engelle */
+    overflow: hidden;
+    word-wrap: break-word; 
+}
+
+.weekday-header {
+    font-weight: bold;
+    background-color: #f2f2f2 !important;
+    text-align: center;
+    min-height: auto;
+    padding: 8px;
+}
+
+.day-number {
+    font-weight: 500;
+    font-size: 13px;
+    margin-bottom: 4px;
+    color: #005a9c;
+}
+
+.other-month {
+    background-color: #f9f9f9 !important;
+    color: #ccc;
+}
+
+.other-month .day-number {
+    color: #ccc;
+}
+
+.today .day-number {
+    color: #d9534f;
+    font-weight: bold;
+}
+
+.meal-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 11px;
+}
+
+.meal-list li {
+    margin-bottom: 2px;
+    padding: 2px 4px;
+    background-color: #e7f5ff !important;
+    border-radius: 3px;
+    white-space: normal; /* Uzun yemek isimlerinin alta kaymasını sağla */
+}
+
+.special-day-message {
+    font-size: 11px;
+    font-style: italic;
+    color: #664d03;
+    background-color: #fffbe7 !important;
+    padding: 4px;
+    border-radius: 3px;
+}
