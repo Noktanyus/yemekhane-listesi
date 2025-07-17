@@ -1,0 +1,78 @@
+<?php
+session_start();
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['admin_logged_in']) || !$_SESSION['admin_logged_in']) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim.']);
+    exit;
+}
+
+require_once '../db_connect.php';
+
+$admin_username = $_SESSION['admin_username'] ?? 'Bilinmeyen Admin';
+
+// Loglama Fonksiyonu
+function create_log($pdo, $username, $action, $details = '') {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO logs (admin_username, action, details) VALUES (?, ?, ?)");
+        $stmt->execute([$username, $action, $details]);
+    } catch (PDOException $e) {
+        // Log hatası ana işlemi durdurmamalı
+        error_log("Loglama hatası: " . $e->getMessage());
+    }
+}
+
+$action = $_REQUEST['action'] ?? '';
+
+try {
+    switch ($action) {
+        case 'get_all':
+            $stmt = $pdo->query("SELECT id, name, calories FROM meals ORDER BY name");
+            echo json_encode($stmt->fetchAll());
+            break;
+
+        case 'get_single':
+            $id = $_GET['id'] ?? 0;
+            $stmt = $pdo->prepare("SELECT * FROM meals WHERE id = ?");
+            $stmt->execute([$id]);
+            echo json_encode($stmt->fetch());
+            break;
+
+        case 'create':
+            $stmt = $pdo->prepare("INSERT INTO meals (name, calories, ingredients) VALUES (?, ?, ?)");
+            $stmt->execute([$_POST['name'], $_POST['calories'], $_POST['ingredients']]);
+            $new_id = $pdo->lastInsertId();
+            create_log($pdo, $admin_username, 'YEMEK OLUŞTURULDU', "ID: $new_id, Ad: {$_POST['name']}");
+            echo json_encode(['success' => true, 'message' => 'Yemek başarıyla eklendi.']);
+            break;
+
+        case 'update':
+            $stmt = $pdo->prepare("UPDATE meals SET name = ?, calories = ?, ingredients = ? WHERE id = ?");
+            $stmt->execute([$_POST['name'], $_POST['calories'], $_POST['ingredients'], $_POST['meal_id']]);
+            create_log($pdo, $admin_username, 'YEMEK GÜNCELLENDİ', "ID: {$_POST['meal_id']}, Ad: {$_POST['name']}");
+            echo json_encode(['success' => true, 'message' => 'Yemek başarıyla güncellendi.']);
+            break;
+
+        case 'delete':
+            $id = $_POST['id'] ?? 0;
+            // Silmeden önce yemeğin adını alalım ki log daha anlamlı olsun
+            $stmt_get_name = $pdo->prepare("SELECT name FROM meals WHERE id = ?");
+            $stmt_get_name->execute([$id]);
+            $meal_name = $stmt_get_name->fetchColumn();
+
+            $stmt = $pdo->prepare("DELETE FROM meals WHERE id = ?");
+            $stmt->execute([$id]);
+            create_log($pdo, $admin_username, 'YEMEK SİLİNDİ', "ID: $id, Ad: $meal_name");
+            echo json_encode(['success' => true, 'message' => 'Yemek başarıyla silindi.']);
+            break;
+
+        default:
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Geçersiz eylem.']);
+            break;
+    }
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Veritabanı hatası: ' . $e->getMessage()]);
+}
