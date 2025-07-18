@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'db_connect.php';
+require_once 'includes/functions.php';
 
 $error_message = '';
 
@@ -26,6 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Giriş başarılı
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_username'] = $admin['username'];
+
+                // Başarılı giriş logu oluştur
+                create_log($pdo, $admin['username'], 'LOGIN', 'Başarılı Yönetici Girişi', 'Kullanıcı başarıyla sisteme giriş yaptı.');
+
                 header('Location: admin.php');
                 exit;
             } else {

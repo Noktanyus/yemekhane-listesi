@@ -1,5 +1,5 @@
 -- Veritabanı Adı: akdeniz_yemekhane
--- Bu dosya, veritabanı yapısını kurar ve günceller.
+-- Bu dosya, veritabanı yapısını kurar. `setup.php` tarafından çalıştırılır.
 
 CREATE DATABASE IF NOT EXISTS akdeniz_yemekhane CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE akdeniz_yemekhane;
@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS `meals` (
   `name` VARCHAR(255) NOT NULL,
   `calories` INT,
   `ingredients` TEXT,
+  `is_vegetarian` BOOLEAN DEFAULT FALSE,
+  `is_gluten_free` BOOLEAN DEFAULT FALSE,
+  `has_allergens` BOOLEAN DEFAULT FALSE,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -43,15 +46,3 @@ CREATE TABLE IF NOT EXISTS `logs` (
   `details` TEXT,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- MEALS TABLOSUNU GÜNCELLE (Diyet/Alerjen Sütunları)
--- Bu komutlar, sütunlar yoksa ekler. setup.php bu komutların tekrar çalıştırılmasından doğacak hataları görmezden gelir.
-ALTER TABLE `meals`
-  ADD COLUMN `is_vegetarian` BOOLEAN DEFAULT FALSE AFTER `ingredients`,
-  ADD COLUMN `is_gluten_free` BOOLEAN DEFAULT FALSE AFTER `is_vegetarian`,
-  ADD COLUMN `has_allergens` BOOLEAN DEFAULT FALSE AFTER `is_gluten_free`;
-
--- Örnek Yönetici Verisi (Eğer hiç admin yoksa eklenir)
-INSERT INTO `admins` (username, password_hash)
-SELECT 'admin', '$2y$10$g.p/g6vT8B5t7j/Z5a.Lz.Lq0n5oH.S3j5L6kF9c8b7a6s5d4e3f'
-WHERE NOT EXISTS (SELECT 1 FROM `admins`);
