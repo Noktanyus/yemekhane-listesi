@@ -49,26 +49,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Girişi - Akdeniz Üniversitesi Yemekhane</title>
-    <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/admin.css">
 </head>
 <body>
     <div class="login-container">
         <form action="login.php" method="POST" class="login-form">
             <h2>Yönetici Paneli Girişi</h2>
-            <p>Akdeniz Üniversitesi Yemek Listesi Yönetim Sistemi</p>
+            <p>Yemek Listesi Yönetim Sistemi</p>
             
             <?php if ($error_message): ?>
                 <div class="form-error"><?php echo htmlspecialchars($error_message); ?></div>
             <?php endif; ?>
 
             <div class="form-group">
-                <label for="username">Kullanıcı Adı</label>
-                <input type="text" id="username" name="username" required>
+                <label for="username" class="sr-only">Kullanıcı Adı</label>
+                <input type="text" id="username" name="username" placeholder="Kullanıcı Adı" required>
             </div>
             <div class="form-group">
-                <label for="password">Şifre</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password" class="sr-only">Şifre</label>
+                <input type="password" id="password" name="password" placeholder="Şifre" required>
             </div>
             <button type="submit" class="btn-submit">Giriş Yap</button>
         </form>

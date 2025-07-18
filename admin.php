@@ -50,9 +50,13 @@ try {
                 <div class="week-view-container">
                     <h3>Haftalık Bakış</h3>
                     <div class="week-navigation">
-                        <button id="prev-week">&lt; Önceki Hafta</button>
+                        <button id="prev-week" class="week-nav-btn" title="Önceki Hafta">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
                         <span id="week-range"></span>
-                        <button id="next-week">Sonraki Hafta &gt;</button>
+                        <button id="next-week" class="week-nav-btn" title="Sonraki Hafta">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
                     </div>
                     <div id="week-view-list"></div>
                 </div>
@@ -183,7 +187,7 @@ try {
 
     <div id="help-modal" class="modal hidden">
         <div class="modal-content">
-            <button class="modal-close">&times;</button>
+            <button class="modal-close"></button>
             <h3>Yardım</h3>
             <div id="help-content">
                 <h4>CSV Dosyası ile Çalışma Rehberi</h4>
@@ -221,7 +225,7 @@ try {
 
     <div id="toast-container"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="assets/js/admin.js"></script>
 </body>
 </html>

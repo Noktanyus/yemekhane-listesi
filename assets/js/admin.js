@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="date-info"></div>
                             <span class="menu-summary"></span>
                         </div>
-                        <button class="btn-edit-day" data-date="${d.date_sql}">Düzenle</button>
+                        <button class="btn-edit btn-edit-day" data-date="${d.date_sql}">Düzenle</button>
                     `;
                     dayCard.querySelector('.date-info').textContent = d.date_formatted;
                     const summarySpan = dayCard.querySelector('.menu-summary');
@@ -145,11 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         tab.addEventListener('click', e => {
-            if (e.target.matches('.btn-edit-day')) loadDateIntoForm(e.target.dataset.date);
-            if (e.target.matches('#prev-week')) { currentWeekDate.setDate(currentWeekDate.getDate() - 7); renderWeekView(currentWeekDate); }
-            if (e.target.matches('#next-week')) { currentWeekDate.setDate(currentWeekDate.getDate() + 7); renderWeekView(currentWeekDate); }
-            if (e.target.matches('#btn-add-meal-to-menu')) addMealInput();
-            if (e.target.matches('.btn-remove-meal')) e.target.closest('.meal-input-group').remove();
+            const target = e.target;
+            if (target.closest('.btn-edit-day')) loadDateIntoForm(target.closest('.btn-edit-day').dataset.date);
+            if (target.closest('#prev-week')) { currentWeekDate.setDate(currentWeekDate.getDate() - 7); renderWeekView(currentWeekDate); }
+            if (target.closest('#next-week')) { currentWeekDate.setDate(currentWeekDate.getDate() + 7); renderWeekView(currentWeekDate); }
+            if (target.closest('#btn-add-meal-to-menu')) addMealInput();
+            if (target.closest('.btn-remove-meal')) target.closest('.meal-input-group').remove();
         });
         dateInput.addEventListener('change', () => dateInput.value && loadDateIntoForm(dateInput.value));
         isSpecialDayCheckbox.addEventListener('change', toggleDateFormFields);
