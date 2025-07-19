@@ -1,18 +1,25 @@
+/**
+ * Admin Panel JavaScript v7.0 (Nihai Sürüm - Tam Fonksiyonel)
+ * Description: Modüler yapıya tam uyumlu, sadece aktif olan sayfanın kodlarını çalıştıran,
+ *              hatalara karşı dayanıklı ve tam işlevsel script.
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    // --- GENEL YARDIMCILAR ---
+    // --- 1. GENEL YARDIMCILAR (API & TOAST) ---
     const api = {
         _fetch: async (url, options) => {
             const response = await fetch(url, options);
-            if (response.ok) {
-                const text = await response.text();
-                try { return text ? JSON.parse(text) : {}; } 
-                catch (e) { throw new Error("Sunucudan gelen yanıt JSON formatında değil."); }
+            const text = await response.text();
+            try {
+                const data = JSON.parse(text);
+                if (!response.ok) throw new Error(data.message || `Sunucu Hatası: ${response.status}`);
+                return data;
+            } catch (e) {
+                const errorSnippet = text.substring(0, 300).replace(/<[^>]+>/g, '');
+                throw new Error(`Sunucudan geçersiz yanıt alındı. Hata başlangıcı: "${errorSnippet}..."`);
             }
-            const errorData = await response.json().catch(() => ({ message: `Sunucu hatası: ${response.status} ${response.statusText}` }));
-            throw new Error(errorData.message || 'Bilinmeyen bir sunucu hatası oluştu.');
         },
-        get: (endpoint, params = {}) => api._fetch(`api/${endpoint}?${new URLSearchParams(params)}`),
-        post: (endpoint, data) => api._fetch(`api/${endpoint}`, { method: 'POST', body: data })
+        get: (endpoint, params = {}) => api._fetch(`../api/${endpoint}?${new URLSearchParams(params)}`),
+        post: (endpoint, formData) => api._fetch(`../api/${endpoint}`, { method: 'POST', body: formData })
     };
 
     const toastContainer = document.getElementById('toast-container');
@@ -20,31 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!toastContainer) return;
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.textContent = message;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-times-circle'}"></i> ${message}`;
         toastContainer.appendChild(toast);
-        setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.5s forwards';
-            toast.addEventListener('animationend', () => toast.remove());
-        }, 4000);
+        setTimeout(() => toast.remove(), 5000);
     };
 
-    // --- SEKME YÖNETİMİ ---
-    const tabs = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(item => item.classList.remove('active'));
-            tab.classList.add('active');
-            tabContents.forEach(content => content.classList.remove('active'));
-            const activeTabContent = document.getElementById(tab.dataset.tab);
-            if (activeTabContent) {
-                activeTabContent.classList.add('active');
-                document.dispatchEvent(new CustomEvent('tabchanged', { detail: { tabId: tab.dataset.tab } }));
-            }
-        });
-    });
-
-    // --- ORTAK VERİ YÖNETİMİ ---
+    // --- 2. PAYLAŞILAN FONKSİYONLAR ---
     const mealsDatalist = document.getElementById('meals-datalist');
     const refreshAllMealData = async () => {
         try {
@@ -53,53 +41,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 mealsDatalist.innerHTML = meals.map(m => `<option value="${m.name}"></option>`).join('');
             }
             document.dispatchEvent(new CustomEvent('mealsupdated', { detail: { meals } }));
-        } catch (error) {
-            showToast(error.message || 'Yemek verileri alınamadı.', 'error');
-        }
+        } catch (error) { showToast(error.message, 'error'); }
     };
 
-    // --- MODÜL: TARİH YÖNETİMİ ---
-    const initDateManagement = () => {
-        const tab = document.getElementById('tab-date-management');
-        if (!tab) return;
+    // --- 3. MODÜL BAŞLATICILARI ---
+
+    const initMenuModule = () => {
+        const container = document.querySelector('.tab-content[data-page="menu"]');
+        if (!container) return;
 
         let currentWeekDate = new Date();
-        const weekViewListEl = tab.querySelector('#week-view-list');
-        const dateForm = tab.querySelector('#manage-date-form');
-        const dateInput = tab.querySelector('#menu-date');
-        const formTitle = tab.querySelector('#form-title');
-        const isSpecialDayCheckbox = tab.querySelector('#is-special-day');
-        const mealInputsContainer = tab.querySelector('#meal-inputs-container');
-        const specialDayContainer = tab.querySelector('#special-day-container');
-        const mealSelectList = tab.querySelector('#meal-select-list');
+        const weekViewListEl = container.querySelector('#week-view-list');
+        const dateForm = container.querySelector('#manage-date-form');
+        const dateInput = container.querySelector('#menu-date');
+        const formTitle = container.querySelector('#form-title');
+        const isSpecialDayCheckbox = container.querySelector('#is-special-day');
+        const mealInputsContainer = container.querySelector('#meal-inputs-container');
+        const specialDayContainer = container.querySelector('#special-day-container');
+        const mealSelectList = container.querySelector('#meal-select-list');
         const mealInputTemplate = document.getElementById('meal-input-template');
+        const menuDetailsSection = container.querySelector('#menu-details-section');
 
         const renderWeekView = async (date) => {
-            const weekRangeEl = tab.querySelector('#week-range');
+            const weekRangeEl = container.querySelector('#week-range');
             if (!weekRangeEl || !weekViewListEl) return;
+            weekViewListEl.innerHTML = '<p>Yükleniyor...</p>';
             try {
-                const data = await api.get('get_week_overview.php', { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() });
-                weekRangeEl.innerHTML = `${data.start_of_week_formatted}<br>${data.end_of_week_formatted}`;
-                weekViewListEl.innerHTML = '';
-                data.days.forEach(d => {
-                    const dayCard = document.createElement('div');
-                    dayCard.className = 'day-card';
-                    dayCard.innerHTML = `
+                const data = await api.get('get_week_overview.php', { date: date.toISOString().split('T')[0] });
+                weekRangeEl.textContent = `${data.start_of_week_formatted} - ${data.end_of_week_formatted}`;
+                weekViewListEl.innerHTML = data.days.map(d => `
+                    <div class="day-card">
                         <div>
-                            <div class="date-info"></div>
-                            <span class="menu-summary"></span>
+                            <div class="date-info">${d.date_formatted}</div>
+                            <span class="menu-summary ${d.is_special ? 'special' : ''}">${d.summary}</span>
                         </div>
-                        <button class="btn-edit btn-edit-day" data-date="${d.date_sql}">Düzenle</button>
-                    `;
-                    dayCard.querySelector('.date-info').textContent = d.date_formatted;
-                    const summarySpan = dayCard.querySelector('.menu-summary');
-                    summarySpan.textContent = d.summary;
-                    if (d.is_special) summarySpan.classList.add('special');
-                    weekViewListEl.appendChild(dayCard);
-                });
-            } catch (error) {
-                showToast(error.message || 'Haftalık görünüm alınamadı.', 'error');
-            }
+                        <button class="btn btn-secondary btn-sm btn-edit-day" data-date="${d.date_sql}"><i class="fas fa-pencil-alt"></i> Düzenle</button>
+                    </div>`).join('');
+            } catch (error) { showToast(error.message, 'error'); }
         };
 
         const toggleDateFormFields = () => {
@@ -112,58 +90,24 @@ document.addEventListener('DOMContentLoaded', () => {
             clone.querySelector('input').value = value;
             mealSelectList.appendChild(clone);
         };
-
+        
         const resetForm = () => {
             dateForm.reset();
             mealSelectList.innerHTML = '';
-            formTitle.textContent = 'Tarih Seçin veya Oluşturun';
+            formTitle.textContent = 'Menü Düzenle';
             dateForm.dataset.hadMenu = 'false';
+            menuDetailsSection.classList.add('hidden');
             toggleDateFormFields();
         };
-
-        const copyMenuForm = tab.querySelector('#copy-menu-form');
-        if (copyMenuForm) {
-            copyMenuForm.addEventListener('submit', async e => {
-                e.preventDefault();
-                const submitButton = copyMenuForm.querySelector('button[type="submit"]');
-                const sourceDate = copyMenuForm.querySelector('#source-date').value;
-                const targetDate = copyMenuForm.querySelector('#target-date').value;
-
-                if (!sourceDate || !targetDate) {
-                    showToast('Lütfen kaynak ve hedef tarihleri seçin.', 'error');
-                    return;
-                }
-                if (sourceDate === targetDate) {
-                    showToast('Kaynak ve hedef tarihler aynı olamaz.', 'error');
-                    return;
-                }
-
-                submitButton.disabled = true;
-                submitButton.textContent = 'Kopyalanıyor...';
-                try {
-                    const result = await api.post('copy_menu.php', new FormData(copyMenuForm));
-                    showToast(result.message, result.success ? 'success' : 'error');
-                    if (result.success) {
-                        renderWeekView(new Date(targetDate + 'T00:00:00'));
-                        copyMenuForm.reset();
-                    }
-                } catch (error) {
-                    showToast(error.message || 'Menü kopyalanamadı.', 'error');
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Kopyala';
-                }
-            });
-        }
 
         const loadDateIntoForm = async (dateStr) => {
             resetForm();
             dateInput.value = dateStr;
             formTitle.textContent = `Tarih Yükleniyor...`;
+            menuDetailsSection.classList.remove('hidden');
             try {
                 const data = await api.get('get_menu_events.php', { date: dateStr });
-                const dateObj = new Date(dateStr + 'T00:00:00');
-                formTitle.textContent = `${dateObj.toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} Düzenleniyor`;
+                formTitle.textContent = `${new Date(dateStr + 'T00:00:00').toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
                 isSpecialDayCheckbox.checked = data.is_special;
                 if (data.is_special) {
                     dateForm.querySelector('[name="special_day_message"]').value = data.message;
@@ -173,61 +117,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 dateForm.dataset.hadMenu = !data.is_special && data.menu && data.menu.length > 0;
                 toggleDateFormFields();
-            } catch (error) {
-                showToast(error.message || 'Tarih detayı alınamadı.', 'error');
-                formTitle.textContent = 'Tarih Seçin veya Oluşturun';
-            }
+            } catch (error) { showToast(error.message, 'error'); resetForm(); }
         };
 
-        tab.addEventListener('click', e => {
-            const target = e.target;
-            if (target.closest('.btn-edit-day')) loadDateIntoForm(target.closest('.btn-edit-day').dataset.date);
-            if (target.closest('#prev-week')) { currentWeekDate.setDate(currentWeekDate.getDate() - 7); renderWeekView(currentWeekDate); }
-            if (target.closest('#next-week')) { currentWeekDate.setDate(currentWeekDate.getDate() + 7); renderWeekView(currentWeekDate); }
-            if (target.closest('#btn-add-meal-to-menu')) addMealInput();
-            if (target.closest('.btn-remove-meal')) target.closest('.meal-input-group').remove();
+        container.addEventListener('click', e => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            if (button.matches('.btn-edit-day')) loadDateIntoForm(button.dataset.date);
+            if (button.id === 'prev-week') { currentWeekDate.setDate(currentWeekDate.getDate() - 7); renderWeekView(currentWeekDate); }
+            if (button.id === 'next-week') { currentWeekDate.setDate(currentWeekDate.getDate() + 7); renderWeekView(currentWeekDate); }
+            if (button.id === 'btn-add-meal-to-menu') addMealInput();
+            if (button.matches('.btn-remove-meal')) button.closest('.meal-input-group').remove();
         });
+
         dateInput.addEventListener('change', () => dateInput.value && loadDateIntoForm(dateInput.value));
         isSpecialDayCheckbox.addEventListener('change', toggleDateFormFields);
 
         dateForm.addEventListener('submit', async e => {
             e.preventDefault();
-            const mealInputs = mealSelectList.querySelectorAll('input[name="meal_names[]"]');
-            const hasMeals = Array.from(mealInputs).some(input => input.value.trim() !== '');
-            if (dateForm.dataset.hadMenu === 'true' && !hasMeals && !isSpecialDayCheckbox.checked) {
-                if (!confirm('Bu tarihe ait tüm menüyü silmek istediğinizden emin misiniz?')) return;
-            }
             const submitButton = dateForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
-            submitButton.textContent = 'Kaydediliyor...';
             try {
                 const result = await api.post('manage_date.php', new FormData(dateForm));
-                showToast(result.message, result.success ? 'success' : 'error');
-                if (result.success) renderWeekView(new Date(dateInput.value + 'T00:00:00'));
-            } catch (error) {
-                showToast(error.message || 'Tarih kaydedilemedi.', 'error');
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Değişiklikleri Kaydet';
-            }
+                showToast(result.message, 'success');
+                renderWeekView(new Date(dateInput.value + 'T00:00:00'));
+            } catch (error) { showToast(error.message, 'error');
+            } finally { submitButton.disabled = false; }
         });
-
         renderWeekView(currentWeekDate);
-        toggleDateFormFields();
     };
 
-    // --- MODÜL: YEMEK YÖNETİMİ ---
-    const initMealManagement = () => {
-        const tab = document.getElementById('tab-meal-management');
-        if (!tab) return;
-        const mealsTableBody = tab.querySelector('#meals-table tbody');
+    const initMealsModule = () => {
+        const container = document.querySelector('.tab-content[data-page="meals"]');
+        if (!container) return;
+        const mealsTableBody = container.querySelector('#meals-table tbody');
         const mealModal = document.getElementById('meal-modal');
         const mealForm = document.getElementById('meal-form');
         const modalTitle = mealModal.querySelector('#modal-title-meal');
         const openModal = (title) => { modalTitle.textContent = title; mealModal.classList.remove('hidden'); };
-        const closeModal = () => { mealModal.classList.add('hidden'); mealForm.reset(); mealForm.querySelector('[name="meal_id"]').value = ''; };
+        const closeModal = () => { mealModal.classList.add('hidden'); mealForm.reset(); };
 
-        tab.querySelector('#btn-add-new-meal').addEventListener('click', () => openModal('Yeni Yemek Ekle'));
+        container.querySelector('#btn-add-new-meal').addEventListener('click', () => openModal('Yeni Yemek Ekle'));
         mealModal.querySelector('.modal-close').addEventListener('click', closeModal);
 
         mealsTableBody.addEventListener('click', async e => {
@@ -248,9 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (button.matches('.btn-delete')) {
                 if (confirm('Bu yemeği silmek istediğinizden emin misiniz?')) {
-                    const result = await api.post('manage_meal.php', new URLSearchParams({ action: 'delete', id }));
-                    showToast(result.message, result.success ? 'success' : 'error');
-                    if (result.success) refreshAllMealData();
+                    await api.post('manage_meal.php', new URLSearchParams({ action: 'delete', id, csrf_token: mealForm.csrf_token.value }));
+                    showToast('Yemek başarıyla silindi.', 'success');
+                    refreshAllMealData();
                 }
             }
         });
@@ -259,213 +189,446 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const submitButton = mealForm.querySelector('button[type="submit"]');
             submitButton.disabled = true;
-            submitButton.textContent = 'Kaydediliyor...';
             const id = mealForm.querySelector('[name="meal_id"]').value;
             const formData = new FormData(mealForm);
             formData.append('action', id ? 'update' : 'create');
             try {
-                const result = await api.post('manage_meal.php', formData);
-                showToast(result.message, result.success ? 'success' : 'error');
-                if (result.success) { closeModal(); refreshAllMealData(); }
-            } catch (error) {
-                showToast(error.message || 'Yemek kaydedilemedi.', 'error');
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Kaydet';
-            }
+                await api.post('manage_meal.php', formData);
+                showToast(`Yemek başarıyla ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
+                closeModal();
+                refreshAllMealData();
+            } catch (error) { showToast(error.message, 'error');
+            } finally { submitButton.disabled = false; }
         });
 
         document.addEventListener('mealsupdated', e => {
-            const meals = e.detail.meals;
-            if (mealsTableBody) {
-                mealsTableBody.innerHTML = meals.map(m => `
-                    <tr>
-                        <td data-label="Yemek Adı">
-                            ${m.name}
-                            <div class="diet-icons">
-                                ${m.is_vegetarian == 1 ? '<span title="Vejetaryen">🥬</span>' : ''}
-                                ${m.is_gluten_free == 1 ? '<span title="Glütensiz">🚫🌾</span>' : ''}
-                                ${m.has_allergens == 1 ? '<span title="Alerjen İçerir">⚠️</span>' : ''}
-                            </div>
-                        </td>
-                        <td data-label="Kalori">${m.calories || 'N/A'}</td>
-                        <td data-label="İşlemler" class="actions-cell">
-                            <button class="btn-edit" data-id="${m.id}">Düzenle</button>
-                            <button class="btn-delete" data-id="${m.id}">Sil</button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
+            mealsTableBody.innerHTML = e.detail.meals.map(m => `
+                <tr>
+                    <td>${m.name}</td>
+                    <td>${m.calories || 'N/A'}</td>
+                    <td class="actions-cell">
+                        <button class="btn btn-secondary btn-sm btn-edit" data-id="${m.id}"><i class="fas fa-pencil-alt"></i> Düzenle</button>
+                        <button class="btn btn-danger btn-sm btn-delete" data-id="${m.id}"><i class="fas fa-trash-alt"></i> Sil</button>
+                    </td>
+                </tr>`).join('');
         });
     };
 
-    // --- MODÜL: CSV YÜKLEME ---
-    const initCsvUploader = () => {
-        const tab = document.getElementById('tab-excel-import');
-        if (!tab) return;
-        const form = tab.querySelector('#csv-upload-form');
-        const previewContainer = tab.querySelector('#csv-preview-container');
-        const previewList = tab.querySelector('#csv-preview-list');
-        const btnCommit = tab.querySelector('#btn-commit-csv');
-        const btnCancel = tab.querySelector('#btn-cancel-csv');
-        const fileInput = tab.querySelector('#csv-file');
-        const submitButton = form.querySelector('button[type="submit"]');
+    const initUploadModule = () => {
+        const container = document.querySelector('.tab-content[data-page="upload"]');
+        if (!container) return;
+        const form = container.querySelector('#csv-upload-form');
+        const uploadArea = container.querySelector('#csv-upload-area');
+        const previewContainer = container.querySelector('#csv-preview-container');
+        const fileInput = container.querySelector('#csv-file');
+        const previewList = container.querySelector('#csv-preview-list');
+        const btnCommit = container.querySelector('#btn-commit-csv');
+        const btnCancel = container.querySelector('#btn-cancel-csv');
+
+        const resetView = () => {
+            uploadArea.classList.remove('hidden');
+            previewContainer.classList.add('hidden');
+            form.reset();
+        };
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!fileInput.files.length) { showToast('Lütfen bir dosya seçin.', 'error'); return; }
+            if (!fileInput.files.length) { showToast('L��tfen bir dosya seçin.', 'error'); return; }
+            const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
-            submitButton.textContent = 'Analiz Ediliyor...';
-            const formData = new FormData();
-            formData.append('csv_file', fileInput.files[0]);
+            const formData = new FormData(form);
             formData.append('action', 'analyze');
             try {
                 const result = await api.post('upload_csv.php', formData);
-                if (result.success) {
-                    renderCsvPreview(result.data);
-                    previewContainer.classList.remove('hidden');
-                    form.classList.add('hidden');
-                } else {
-                    showToast(result.message || 'Dosya analizi başarısız.', 'error');
-                }
-            } catch (error) {
-                showToast(error.message || 'Analiz sırasında hata oluştu.', 'error');
-            } finally {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Dosyayı Analiz Et';
-            }
-        });
-
-        const renderCsvPreview = (data) => {
-            previewContainer.originalData = data;
-            let hasErrors = data.some(day => day.error);
-            previewList.innerHTML = data.map((day, dayIndex) => {
-                if (day.error) return `<div class="preview-item error"><strong>Hata:</strong> ${day.error} (Orijinal Satır: ${day.original_date})</div>`;
-                const overwriteWarning = day.exists ? `<div class="overwrite-warning">⚠️ Bu tarihe ait mevcut menü üzerine yazılacak.</div>` : '';
-                if (day.is_special) return `<div class="preview-item special"><strong>${day.date} (Özel Gün):</strong>${overwriteWarning} <span>${day.meals[0]?.name || 'Mesaj Yok'}</span></div>`;
-                const mealsHtml = day.meals.map((meal, mealIndex) => `
-                    <div class="form-group meal-input-group" style="margin-bottom: 5px;">
-                        <input type="text" value="${meal.name}" list="meals-datalist" class="meal-autocomplete-input" data-day-index="${dayIndex}" data-meal-index="${mealIndex}">
-                        ${meal.is_new ? `<span class="new-meal-label">Yeni</span><button type="button" class="btn-add-details" data-day-index="${dayIndex}" data-meal-index="${mealIndex}">Detay Ekle</button>` : ''}
+                previewList.innerHTML = result.data.map(day => `
+                    <div class="preview-item">
+                        <strong>${day.date} ${day.is_special ? '(Özel Gün)' : ''}</strong>
+                        <ul>${day.meals.map(m => `<li class="${m.is_new ? 'new-meal' : ''}">${m.name}</li>`).join('')}</ul>
                     </div>`).join('');
-                return `<div class="preview-item"><strong>${day.date}:</strong>${overwriteWarning}<div class="meals-preview">${mealsHtml}</div></div>`;
-            }).join('');
-            btnCommit.disabled = hasErrors;
-            btnCommit.textContent = hasErrors ? 'Hatalı Satırlar Var, Tekrar Yükleyin' : 'Onayla ve Menüleri Kaydet';
-        };
-        
-        previewList.addEventListener('click', e => {
-            if (e.target.matches('.btn-add-details')) {
-                const { dayIndex, mealIndex } = e.target.dataset;
-                const mealName = previewContainer.originalData[dayIndex].meals[mealIndex].name;
-                const mealModal = document.getElementById('meal-modal');
-                const mealForm = document.getElementById('meal-form');
-                mealForm.reset();
-                mealForm.querySelector('#meal-name').value = mealName;
-                mealForm.querySelector('#meal-name').readOnly = true;
-                mealModal.dataset.csvTarget = `[data-day-index="${dayIndex}"][data-meal-index="${mealIndex}"]`;
-                document.getElementById('modal-title-meal').textContent = `"${mealName}" için Detay Ekle`;
-                mealModal.classList.remove('hidden');
-            }
+                uploadArea.classList.add('hidden');
+                previewContainer.classList.remove('hidden');
+            } catch (error) { showToast(error.message, 'error');
+            } finally { submitButton.disabled = false; }
         });
 
         btnCommit.addEventListener('click', async () => {
             btnCommit.disabled = true;
-            btnCommit.textContent = 'Kaydediliyor...';
             const formData = new FormData();
             formData.append('action', 'commit');
-            formData.append('data', JSON.stringify(previewContainer.originalData));
+            formData.append('csrf_token', form.csrf_token.value);
             try {
                 const result = await api.post('upload_csv.php', formData);
-                showToast(result.message, result.success ? 'success' : 'error');
-                if (result.success) {
-                    resetCsvForm();
-                    refreshAllMealData();
+                showToast(result.message, 'success');
+                resetView();
+                refreshAllMealData();
+            } catch (error) { showToast(error.message, 'error');
+            } finally { btnCommit.disabled = false; }
+        });
+        btnCancel.addEventListener('click', resetView);
+    };
+
+    const initFeedbackModule = () => {
+        const container = document.querySelector('.tab-content[data-page="feedback"]');
+        if (!container) return;
+
+        const feedbackContainer = container.querySelector('#feedback-container');
+        const searchTermInput = container.querySelector('#search-term');
+        const startDateInput = container.querySelector('#start-date');
+        const endDateInput = container.querySelector('#end-date');
+        const statusButtonGroup = container.querySelector('#status-filter-group');
+        const limitSelect = container.querySelector('#limit-select');
+        const clearFiltersButton = container.querySelector('#btn-clear-filters');
+
+        let currentPage = 1;
+        let debounceTimer;
+
+        const loadFeedback = async (page = 1) => {
+            currentPage = page;
+            const status = statusButtonGroup.querySelector('.btn.active').dataset.filter;
+            const searchTerm = searchTermInput.value;
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            const limit = limitSelect.value;
+
+            feedbackContainer.innerHTML = '<p class="text-center">Yükleniyor...</p>';
+            
+            try {
+                const params = { page, status, search: searchTerm, start_date: startDate, end_date: endDate, limit };
+                const result = await api.get('get_feedback.php', params);
+                
+                let content = '';
+                if (result.data.length === 0) {
+                    content = '<div class="alert alert-info text-center">Bu filtrelere uygun geri bildirim bulunamadı.</div>';
+                } else {
+                    content += result.data.map(fb => `
+                        <div class="card feedback-item-card shadow-sm" data-status="${fb.status}">
+                            <div class="card-header">
+                                <div class="user-info">
+                                    <strong class="user-name">${fb.name}</strong>
+                                    <a href="mailto:${fb.email}" class="user-email text-muted">${fb.email}</a>
+                                </div>
+                                <div class="rating">${'★'.repeat(fb.rating)}${'☆'.repeat(5 - fb.rating)}</div>
+                            </div>
+                            <div class="card-body">
+                                <p class="comment-text">${fb.comment || '<i>Kullanıcı yorum bırakmadı.</i>'}</p>
+                                ${fb.image_path ? `<button class="btn btn-sm btn-outline-secondary feedback-image-link" data-filename="${fb.image_path}"><i class="fas fa-paperclip"></i> Eki Görüntüle</button>` : ''}
+                            </div>
+                            <div class="card-footer">
+                                <div class="footer-info">
+                                    <span class="status-badge status-${fb.status}">${fb.status.charAt(0).toUpperCase() + fb.status.slice(1)}</span>
+                                    <small class="text-muted ml-2">Tarih: ${fb.created_at_formatted}</small>
+                                </div>
+                                <div class="footer-actions">
+                                    <button class="btn btn-sm btn-outline-primary btn-reply" data-id="${fb.id}" data-email="${fb.email}"><i class="fas fa-reply"></i> Cevapla</button>
+                                    ${fb.status === 'yeni' ? `<button class="btn btn-sm btn-outline-success btn-mark-read" data-id="${fb.id}"><i class="fas fa-check"></i> Okundu</button>` : ''}
+                                </div>
+                            </div>
+                        </div>`).join('');
+                    
+                    if (result.pagination.total_pages > 1) {
+                        content += `<nav class="pagination-nav mt-4">${Array.from({ length: result.pagination.total_pages }, (_, i) => i + 1).map(p => `<button class="btn btn-sm ${p === currentPage ? 'btn-primary' : 'btn-outline-secondary'}" data-page="${p}">${p}</button>`).join('')}</nav>`;
+                    }
                 }
-            } catch (error) {
-                showToast(error.message || 'Kaydetme sırasında hata oluştu.', 'error');
-            } finally {
-                btnCommit.disabled = false;
-                btnCommit.textContent = 'Onayla ve Menüleri Kaydet';
+                feedbackContainer.innerHTML = content;
+            } catch (error) { 
+                showToast(error.message, 'error'); 
+                feedbackContainer.innerHTML = '<div class="alert alert-danger text-center">Geri bildirimler yüklenirken bir hata oluştu.</div>';
+            }
+        };
+
+        const debouncedLoad = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => loadFeedback(1), 400); // 400ms gecikme
+        };
+
+        [searchTermInput, startDateInput, endDateInput].forEach(input => {
+            input.addEventListener('input', debouncedLoad);
+        });
+
+        limitSelect.addEventListener('change', () => loadFeedback(1));
+
+        statusButtonGroup.addEventListener('click', e => {
+            const button = e.target.closest('button');
+            if (button && !button.classList.contains('active')) {
+                statusButtonGroup.querySelector('.btn.active').classList.remove('active');
+                button.classList.add('active');
+                loadFeedback(1);
+            }
+        });
+        
+        clearFiltersButton.addEventListener('click', () => {
+            searchTermInput.value = '';
+            startDateInput.value = '';
+            endDateInput.value = '';
+            // limitSelect.value = '25'; // Bu satır kaldırıldı
+            if (!statusButtonGroup.querySelector('[data-filter="all"]').classList.contains('active')) {
+                statusButtonGroup.querySelector('.btn.active').classList.remove('active');
+                statusButtonGroup.querySelector('[data-filter="all"]').classList.add('active');
+            }
+            loadFeedback(1);
+        });
+
+        const replyModal = document.getElementById('reply-modal');
+        const replyForm = document.getElementById('reply-form');
+        const btnUseTemplate = document.getElementById('btn-use-template');
+        const imageViewerModal = document.getElementById('image-viewer-modal');
+        const imageViewerImg = document.getElementById('image-viewer-img');
+        const downloadBtn = document.getElementById('download-btn');
+        let currentZoom = 1;
+
+        feedbackContainer.addEventListener('click', async e => {
+            const button = e.target.closest('button');
+            if (!button) return;
+
+            if (button.dataset.page) {
+                loadFeedback(parseInt(button.dataset.page));
+                return;
+            }
+
+            if (button.matches('.feedback-image-link')) {
+                const filename = button.dataset.filename;
+                const imageUrl = `../api/view_image.php?file=${filename}`;
+                imageViewerImg.src = imageUrl;
+                downloadBtn.href = `${imageUrl}&download=true`;
+                imageViewerModal.classList.remove('hidden');
+                currentZoom = 1;
+                imageViewerImg.style.transform = 'scale(1)';
+                return;
+            }
+            
+            if (button.matches('.btn-mark-read')) {
+                const id = button.dataset.id;
+                const card = button.closest('.feedback-item-card');
+                button.disabled = true;
+                try {
+                    await api.post('mark_feedback.php', new URLSearchParams({ id, status: 'okundu', csrf_token: document.querySelector('[name=csrf_token]').value }));
+                    showToast('Geri bildirim "okundu" olarak işaretlendi.', 'success');
+                    
+                    card.dataset.status = 'okundu';
+                    const statusBadge = card.querySelector('.status-badge');
+                    if(statusBadge) {
+                        statusBadge.classList.remove('status-yeni');
+                        statusBadge.classList.add('status-okundu');
+                        statusBadge.textContent = 'Okundu';
+                    }
+                    button.remove();
+                } catch (error) {
+                    showToast(error.message, 'error');
+                    button.disabled = false;
+                }
+                return;
+            }
+
+            if (button.matches('.btn-reply')) {
+                const card = button.closest('.feedback-item-card');
+                const id = button.dataset.id;
+                const email = button.dataset.email;
+                const name = card.querySelector('.user-name').textContent;
+
+                replyForm.querySelector('#reply-feedback-id').value = id;
+                replyForm.querySelector('#reply-feedback-email').value = email;
+                replyForm.querySelector('#reply-feedback-name').value = name;
+                
+                replyModal.classList.remove('hidden');
             }
         });
 
-        const resetCsvForm = () => {
-            previewContainer.classList.add('hidden');
-            previewList.innerHTML = '';
-            form.classList.remove('hidden');
-            form.reset();
-        };
-        btnCancel.addEventListener('click', resetCsvForm);
-    };
+        // --- Image Viewer Modal Logic ---
+        imageViewerModal.querySelector('.modal-close').addEventListener('click', () => imageViewerModal.classList.add('hidden'));
+        document.getElementById('zoom-in-btn').addEventListener('click', () => {
+            currentZoom = Math.min(currentZoom + 0.2, 3); // Max zoom 3x
+            imageViewerImg.style.transform = `scale(${currentZoom})`;
+        });
+        document.getElementById('zoom-out-btn').addEventListener('click', () => {
+            currentZoom = Math.max(currentZoom - 0.2, 0.4); // Min zoom 0.4x
+            imageViewerImg.style.transform = `scale(${currentZoom})`;
+        });
 
-    // --- MODÜL: LOG GÖRÜNTÜLEYİCİ ---
-    const initLogViewer = () => {
-        const tab = document.getElementById('tab-logs');
-        if (!tab) return;
-        let logsLoaded = false;
-        const logsTableBody = tab.querySelector('#logs-table tbody');
-        const loadLogs = async () => {
-            if (logsLoaded || !logsTableBody) return;
-            logsTableBody.innerHTML = '<tr><td colspan="6">Yükleniyor...</td></tr>';
+
+        replyModal.querySelector('.modal-close').addEventListener('click', () => {
+            replyModal.classList.add('hidden');
+            replyForm.reset();
+        });
+        
+        btnUseTemplate.addEventListener('click', () => {
+            const name = replyForm.querySelector('#reply-feedback-name').value;
+            const template = `Sayın ${name},\n\nGeri bildiriminiz için teşekkür ederiz.\n\nKonuyla ilgili olarak gerekli incelemeler yapılmıştır.\n\nİyi günler dileriz,\n${APP_NAME}`;
+            replyForm.querySelector('#reply-text').value = template;
+        });
+
+        replyForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const submitButton = replyForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
             try {
-                const result = await api.get('get_logs.php');
-                if (result.success) {
-                    logsTableBody.innerHTML = result.data.map(log => `<tr><td data-label="Tarih">${log.created_at_formatted}</td><td data-label="Yönetici">${log.admin_username}</td><td data-label="Eylem Türü"><span class="log-action-type">${log.action_type}</span></td><td data-label="Özet">${log.action_summary}</td><td data-label="Detaylar">${log.details || ''}</td></tr>`).join('');
-                } else {
-                    logsTableBody.innerHTML = `<tr><td colspan="5">${result.message}</td></tr>`;
-                }
-                logsLoaded = true;
+                const result = await api.post('reply_feedback.php', new FormData(replyForm));
+                showToast(result.message, 'success');
+                replyModal.classList.add('hidden');
+                replyForm.reset();
+                loadFeedback(currentPage); // Listeyi yenile
             } catch (error) {
-                logsTableBody.innerHTML = `<tr><td colspan="5">${error.message || 'Kayıtlar yüklenemedi.'}</td></tr>`;
+                showToast(error.message, 'error');
+            } finally {
+                submitButton.disabled = false;
             }
-        };
-        document.addEventListener('tabchanged', e => { if (e.detail.tabId === 'tab-logs') loadLogs(); });
+        });
+
+        loadFeedback();
     };
 
-    // --- MODÜL: RAPORLAMA ---
-    const initReports = () => {
-        const tab = document.getElementById('tab-reports');
-        if (!tab) return;
-        let topMealsChart = null;
+    const initReportsModule = () => {
+        const container = document.querySelector('.tab-content[data-page="reports"]');
+        if (!container) return;
+
+        const statsContainer = container.querySelector('#general-stats-container');
+        const complaintWordsList = container.querySelector('#complaint-words-list');
+        const charts = {
+            topMeals: container.querySelector('#top-meals-chart'),
+            ratings: container.querySelector('#ratings-chart'),
+        };
+        
+        let chartInstances = {};
+
+        const renderChart = (canvas, type, data, options = {}) => {
+            if (!canvas) return;
+            const key = canvas.id;
+            if (chartInstances[key]) {
+                chartInstances[key].destroy();
+            }
+            chartInstances[key] = new Chart(canvas.getContext('2d'), { type, data, options });
+        };
+
         const loadReports = async () => {
             try {
-                const result = await api.get('get_report_data.php', { type: 'top_meals' });
-                if (result.success) {
-                    const ctx = document.getElementById('top-meals-chart').getContext('2d');
-                    if (topMealsChart) topMealsChart.destroy();
-                    topMealsChart = new Chart(ctx, {
-                        type: 'bar', data: result.data,
-                        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, responsive: true, plugins: { legend: { display: false } } }
-                    });
-                } else {
-                    showToast(result.message, 'error');
+                const result = await api.get('get_report_data.php');
+                const { general_stats, top_meals_chart, ratings_chart, complaint_words } = result.data;
+
+                // 1. Genel istatistik kartlarını doldur
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="icon" style="background-color: #17a2b8;"><i class="fas fa-comments"></i></div>
+                        <div class="details">
+                            <h4>Toplam Geri Bildirim</h4>
+                            <p class="value">${general_stats.total_feedback}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon" style="background-color: #ffc107;"><i class="fas fa-star-half-alt"></i></div>
+                        <div class="details">
+                            <h4>Ortalama Puan</h4>
+                            <p class="value">${general_stats.average_rating}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon" style="background-color: #28a745;"><i class="fas fa-bell"></i></div>
+                        <div class="details">
+                            <h4>Yeni Geri Bildirimler</h4>
+                            <p class="value">${general_stats.new_feedback_count}</p>
+                        </div>
+                    </div>
+                `;
+
+                // 2. Grafikleri çiz
+                renderChart(charts.topMeals, 'bar', top_meals_chart, { responsive: true, plugins: { legend: { display: false } } });
+                renderChart(charts.ratings, 'pie', ratings_chart, { responsive: true });
+
+                // 3. Şikayet kelimelerini listele
+                complaintWordsList.innerHTML = Object.entries(complaint_words)
+                    .map(([word, count]) => `<li>${word} <span class="count">${count}</span></li>`)
+                    .join('');
+                if (complaintWordsList.innerHTML === '') {
+                    complaintWordsList.innerHTML = '<p>Düşük puanlı yorum bulunamadı veya yorumlarda anlamlı kelimeler tespit edilemedi.</p>';
                 }
+
             } catch (error) {
-                showToast(error.message || 'Rapor verileri yüklenemedi.', 'error');
+                showToast(error.message, 'error');
+                container.innerHTML = '<div class="alert alert-danger">Raporlar yüklenirken bir hata oluştu.</div>';
             }
         };
-        document.addEventListener('tabchanged', e => { if (e.detail.tabId === 'tab-reports') loadReports(); });
-    };
-    
-    // --- MODÜL: YARDIM ---
-    const initHelpModal = () => {
-        const helpModal = document.getElementById('help-modal');
-        if (!helpModal) return;
-        const openHelpModal = () => helpModal.classList.remove('hidden');
-        const closeHelpModal = () => helpModal.classList.add('hidden');
-        document.getElementById('help-btn')?.addEventListener('click', openHelpModal);
-        document.getElementById('open-help-from-tab')?.addEventListener('click', openHelpModal);
-        helpModal.querySelector('.modal-close')?.addEventListener('click', closeHelpModal);
-        helpModal.addEventListener('click', e => { if (e.target === helpModal) closeHelpModal(); });
+
+        loadReports();
     };
 
-    // --- UYGULAMAYI BAŞLAT ---
-    initDateManagement();
-    initMealManagement();
-    initCsvUploader();
-    initLogViewer();
-    initReports();
-    initHelpModal();
-    refreshAllMealData();
+    const initLogsModule = () => {
+        const container = document.querySelector('.tab-content[data-page="logs"]');
+        if (!container) return;
+        const logsTableBody = container.querySelector('#logs-table tbody');
+        if(!logsTableBody) return;
+        const loadLogs = async () => {
+            try {
+                const result = await api.get('get_logs.php');
+                logsTableBody.innerHTML = result.data.map(log => `
+                    <tr>
+                        <td>${log.created_at_formatted}</td>
+                        <td>${log.admin_username}</td>
+                        <td>${log.ip_address}</td>
+                        <td>${log.action}</td>
+                        <td>${log.details || ''}</td>
+                    </tr>`).join('');
+            } catch (error) { showToast(error.message, 'error'); }
+        };
+        loadLogs();
+    };
+
+    const initOfficialsModule = () => {
+        const container = document.querySelector('.tab-content[data-page="officials"]');
+        if (!container) return;
+        const form = container.querySelector('#officials-form');
+
+        const loadSettings = async () => {
+            try {
+                const result = await api.get('manage_officials.php');
+                if (result.success) {
+                    for (const [key, value] of Object.entries(result.data)) {
+                        const input = form.querySelector(`[name="${key}"]`);
+                        if (input) {
+                            input.value = value;
+                        }
+                    }
+                }
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            try {
+                const result = await api.post('manage_officials.php', new FormData(form));
+                showToast(result.message, 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+
+        loadSettings();
+    };
+
+    // --- 4. ANA BAŞLATICI ---
+    const initPage = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page') || 'menu';
+
+        // İlgili modülün HTML içeriğini aktif hale getir
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        const activeContent = document.querySelector(`.tab-content[data-page="${page}"]`);
+        if (activeContent) activeContent.classList.add('active');
+
+        // İlgili modülün JS kodunu çalıştır
+        if (page === 'menu') initMenuModule();
+        if (page === 'meals') initMealsModule();
+        if (page === 'upload') initUploadModule();
+        if (page === 'feedback') initFeedbackModule();
+        if (page === 'reports') initReportsModule();
+        if (page === 'logs') initLogsModule();
+        if (page === 'officials') initOfficialsModule();
+
+        refreshAllMealData();
+    };
+
+    initPage();
 });

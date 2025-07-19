@@ -2,16 +2,20 @@
 require_once __DIR__ . '/bootstrap.php';
 
 try {
-    // IP adresi sütunu şemada olmadığı için sorgudan kaldırıldı.
-    $stmt = $pdo->query("SELECT id, admin_username, action as action_type, action as action_summary, details, created_at FROM logs ORDER BY created_at DESC LIMIT 100");
+    // Son 50 kaydı çek
+    $stmt = $pdo->query("SELECT id, admin_username, ip_address, action, details, created_at FROM logs ORDER BY created_at DESC LIMIT 50");
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Tarih formatını düzenle
     $formatted_logs = array_map(function($log) {
         try {
+            // 'created_at' alanını formatla ve yeni bir anahtara ata
             $log['created_at_formatted'] = (new DateTime($log['created_at']))->format('d.m.Y H:i:s');
         } catch (Exception $e) {
             $log['created_at_formatted'] = 'Geçersiz Tarih';
         }
+        // Orijinal 'created_at' alanını kaldırabilir veya tutabilirsiniz.
+        // unset($log['created_at']); 
         return $log;
     }, $logs);
 

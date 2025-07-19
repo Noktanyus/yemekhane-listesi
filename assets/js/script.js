@@ -246,5 +246,73 @@ document.addEventListener('DOMContentLoaded', function() {
         printWindow.document.close();
     });
 
+    // Geri Bildirim Modalı İşlevselliği
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackBtn = document.getElementById('feedback-btn');
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackModalCloseBtn = feedbackModal.querySelector('.modal-close');
+
+    feedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('hidden'));
+    feedbackModalCloseBtn.addEventListener('click', () => feedbackModal.classList.add('hidden'));
+    feedbackModal.addEventListener('click', (e) => {
+        if (e.target === feedbackModal) feedbackModal.classList.add('hidden');
+    });
+
+    feedbackForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitButton = feedbackForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Gönderiliyor...';
+
+        try {
+            const response = await fetch('api/submit_feedback.php', {
+                method: 'POST',
+                body: new FormData(feedbackForm)
+            });
+            const result = await response.json();
+            if (result.success) {
+                feedbackModal.classList.add('hidden');
+                feedbackForm.reset();
+                // İsteğe bağlı: Başarı mesajı gösterilebilir.
+                alert('Geri bildiriminiz için teşekkür ederiz!');
+            } else {
+                throw new Error(result.message || 'Bir hata oluştu.');
+            }
+        } catch (error) {
+            alert(`Hata: ${error.message}`);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Gönder';
+        }
+    });
+
+    async function loadSiteInfo() {
+        const officialsContainer = document.getElementById('officials-info');
+        if (!officialsContainer) return;
+
+        try {
+            const response = await fetch('api/get_site_info.php');
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                let html = '';
+                for (const [title, name] of Object.entries(result.data)) {
+                    if (name) {
+                        if (title.includes('E-posta')) {
+                            html += `<div class="official-item"><span class="title">${title}:</span> <a href="mailto:${name}" class="value">${name}</a></div>`;
+                        } else {
+                            html += `<div class="official-item"><span class="title">${title}:</span> <span class="value">${name}</span></div>`;
+                        }
+                    }
+                }
+                officialsContainer.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('Yetkili bilgileri alınırken hata:', error);
+            officialsContainer.innerHTML = '<p>Yetkili bilgileri yüklenemedi.</p>';
+        }
+    }
+
     renderCalendar(currentDate);
+    loadSiteInfo();
 });

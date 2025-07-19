@@ -1,16 +1,19 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    die(json_encode(['success' => false, 'message' => 'Geçersiz istek metodu.']));
+}
+
 // Tarihleri manuel olarak Türkçeleştirmek için diziler
 $months_tr = [1 => 'Ocak', 2 => 'Şubat', 3 => 'Mart', 4 => 'Nisan', 5 => 'Mayıs', 6 => 'Haziran', 7 => 'Temmuz', 8 => 'Ağustos', 9 => 'Eylül', 10 => 'Ekim', 11 => 'Kasım', 12 => 'Aralık'];
 $days_tr = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 
-$year = filter_input(INPUT_GET, 'year', FILTER_VALIDATE_INT, ['options' => ['default' => date('Y')]]);
-$month = filter_input(INPUT_GET, 'month', FILTER_VALIDATE_INT, ['options' => ['default' => date('m')]]);
-$day = filter_input(INPUT_GET, 'day', FILTER_VALIDATE_INT, ['options' => ['default' => date('d')]]);
+$date_param = $_GET['date'] ?? date('Y-m-d');
 
 try {
-    $ref_date = new DateTime("$year-$month-$day");
+    $ref_date = new DateTime($date_param);
     
     $start_of_week = clone $ref_date;
     $start_of_week->modify('monday this week');
@@ -47,14 +50,13 @@ try {
     ]);
     $week_data_raw = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Veriyi daha kolay işlemek için yeniden yapılandır
     $week_data = [];
     foreach($week_data_raw as $item) {
         $week_data[$item['menu_date']] = ['summary' => $item['summary'], 'type' => $item['type']];
     }
 
     $response = [
-        'start_of_week_formatted' => $start_of_week->format('d') . ' ' . $months_tr[(int)$start_of_week->format('n')] . ' ' . $start_of_week->format('Y'),
+        'start_of_week_formatted' => $start_of_week->format('d') . ' ' . $months_tr[(int)$start_of_week->format('n')],
         'end_of_week_formatted' => $end_of_week->format('d') . ' ' . $months_tr[(int)$end_of_week->format('n')] . ' ' . $end_of_week->format('Y'),
         'days' => []
     ];
@@ -64,13 +66,9 @@ try {
         $date_sql = $current_day->format('Y-m-d');
         $day_info = $week_data[$date_sql] ?? null;
         
-        $day_num = (int)$current_day->format('d');
-        $month_name = $months_tr[(int)$current_day->format('n')];
-        $day_name = $days_tr[(int)$current_day->format('w')];
-
         $response['days'][] = [
             'date_sql' => $date_sql,
-            'date_formatted' => "$day_num $month_name, $day_name",
+            'date_formatted' => $current_day->format('d') . ' ' . $months_tr[(int)$current_day->format('n')] . ', ' . $days_tr[(int)$current_day->format('w')],
             'summary' => $day_info['summary'] ?? 'Menü girilmemiş',
             'is_special' => ($day_info['type'] ?? '') === 'special'
         ];

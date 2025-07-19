@@ -1,165 +1,169 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
-$action = $_POST['action'] ?? '';
-
-// 'analyze' ve 'commit' dışındaki eylemleri engelle
-if (!in_array($action, ['analyze', 'commit'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Geçersiz eylem.']);
-    exit;
+// --- HELPER FUNCTIONS ---
+function validate_date($date, $format = 'd.m.Y') {
+    $d = DateTime::createFromFormat($format, $date);
+    return $d && $d->format($format) === $date;
 }
 
-try {
-    if ($action === 'analyze') {
-        handle_analysis($pdo);
-    } elseif ($action === 'commit') {
-        handle_commit($pdo, $admin_username);
-    }
-} catch (Throwable $t) {
-    http_response_code(500);
-    error_log("CSV Upload Error: " . $t->getMessage() . " in " . $t->getFile() . " on line " . $t->getLine());
-    echo json_encode([
-        'success' => false,
-        'message' => 'Sunucu tarafında beklenmedik bir hata oluştu. Lütfen sistem yöneticisine başvurun.'
-    ]);
-}
-
-function handle_analysis($pdo) {
+function handle_file_upload() {
     if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'message' => 'Dosya yükleme hatası: ' . ($_FILES['csv_file']['error'] ?? 'Bilinmiyor')]);
-        exit;
+        throw new Exception('Dosya yüklenirken bir hata oluştu veya dosya seçilmedi.');
     }
-
-    setlocale(LC_ALL, 'tr_TR.UTF-8', 'tr.UTF-8', 'Turkish');
     $file_path = $_FILES['csv_file']['tmp_name'];
-    $file_handle = fopen($file_path, 'r');
-    if (!$file_handle) {
-        echo json_encode(['success' => false, 'message' => 'Yüklenen dosya açılamadı.']);
-        exit;
-    }
+    $file_name = basename($_FILES['csv_file']['name']);
 
-    $bom = "\xEF\xBB\xBF";
-    if (fgets($file_handle, 4) !== $bom) {
-        rewind($file_handle);
-    }
-
-    $preview_data = [];
-    $all_meal_names = array_flip(array_map('strtolower', $pdo->query("SELECT name FROM meals")->fetchAll(PDO::FETCH_COLUMN)));
+    $temp_dir = __DIR__ . '/../uploads/temp_csv/';
+    if (!is_dir($temp_dir)) mkdir($temp_dir, 0755, true);
     
-    fgetcsv($file_handle, 0, ';'); // Başlık satırını atla
-    $row_number = 1;
+    $temp_file_path = $temp_dir . uniqid() . '_' . $file_name;
+    if (!move_uploaded_file($file_path, $temp_file_path)) {
+        throw new Exception('Dosya sunucuda geçici olarak saklanamadı.');
+    }
+    return $temp_file_path;
+}
 
-    while (($row = fgetcsv($file_handle, 0, ';')) !== false) {
-        $row_number++;
-        $date_str = trim($row[0] ?? '');
-        $is_special = !empty(trim($row[7] ?? ''));
-        $day_data = ['original_date' => $date_str, 'date' => null, 'is_special' => $is_special, 'exists' => false, 'meals' => [], 'error' => null];
+function analyze_csv($file_path, $pdo) {
+    $file_content = file_get_contents($file_path);
+    if (substr($file_content, 0, 3) === "\xEF\xBB\xBF") {
+        $file_content = substr($file_content, 3);
+        file_put_contents($file_path, $file_content);
+    }
 
-        if (empty($date_str)) {
-            if (count($row) <= 1 && empty(implode('', (array)$row))) continue;
-            $day_data['error'] = 'Tarih sütunu boş.';
-            $preview_data[] = $day_data;
-            continue;
-        }
+    $preview = [];
+    $errors = [];
+    $row_num = 1;
 
-        $sql_date = null;
-        if (preg_match('/^(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})$/', $date_str, $matches)) {
-            $day = (int)$matches[1];
-            $month = (int)$matches[2];
-            $year = (int)$matches[3];
-            if (checkdate($month, $day, $year)) {
-                $sql_date = sprintf('%04d-%02d-%02d', $year, $month, $day);
+    $stmt_check_meal = $pdo->prepare("SELECT id FROM meals WHERE name = ?");
+
+    if (($handle = fopen($file_path, "r")) !== FALSE) {
+        fgetcsv($handle, 2000, ";"); // Skip header
+        while (($data = fgetcsv($handle, 2000, ";")) !== FALSE) {
+            $row_num++;
+            if (count($data) < 2) continue; // Boş satırları atla
+
+            $data = array_map('trim', $data);
+            $date_str = $data[0];
+            
+            if (!validate_date($date_str)) {
+                $errors[] = "{$row_num}. satırda geçersiz tarih formatı: '{$date_str}'. (GG.AA.YYYY olmalı)";
+                continue;
             }
-        }
 
-        if ($sql_date === null) {
-            $day_data['error'] = 'Geçersiz tarih formatı. Lütfen GG.AA.YYYY formatında girin.';
-            $preview_data[] = $day_data;
-            continue;
-        }
-
-        $day_data['date'] = $sql_date;
-
-        $stmt_exists = $pdo->prepare("SELECT (SELECT COUNT(*) FROM menus WHERE menu_date = :dt1) + (SELECT COUNT(*) FROM special_days WHERE event_date = :dt2)");
-        $stmt_exists->execute([':dt1' => $sql_date, ':dt2' => $sql_date]);
-        $day_data['exists'] = $stmt_exists->fetchColumn() > 0;
-
-        if ($is_special) {
-            $day_data['meals'][] = ['name' => trim($row[1] ?? ''), 'is_new' => false];
-        } else {
-            for ($i = 1; $i <= 6; $i++) {
-                $meal_name = trim($row[$i] ?? '');
-                if (!empty($meal_name)) {
-                    $is_new = !isset($all_meal_names[strtolower($meal_name)]);
-                    $day_data['meals'][] = ['name' => $meal_name, 'is_new' => $is_new];
+            $is_special = !empty($data[7]) && (int)$data[7] === 1;
+            $meals_in_row = [];
+            
+            if ($is_special) {
+                if (empty($data[1])) {
+                    $errors[] = "{$row_num}. satır özel gün ama açıklama (Yemek 1 sütunu) boş.";
+                }
+                $meals_in_row[] = ['name' => $data[1], 'is_new' => false];
+            } else {
+                for ($i = 1; $i <= 6; $i++) {
+                    if (!empty($data[$i])) {
+                        $stmt_check_meal->execute([$data[$i]]);
+                        $exists = $stmt_check_meal->fetchColumn();
+                        $meals_in_row[] = ['name' => $data[$i], 'is_new' => !$exists];
+                    }
                 }
             }
+            
+            $preview[] = [
+                'date' => $date_str,
+                'is_special' => $is_special,
+                'meals' => $meals_in_row
+            ];
         }
-        $preview_data[] = $day_data;
+        fclose($handle);
     }
-    fclose($file_handle);
-    echo json_encode(['success' => true, 'data' => $preview_data]);
+    
+    if (!empty($errors)) {
+        unlink($file_path);
+        throw new Exception(implode('<br>', $errors));
+    }
+
+    return $preview;
 }
 
-function handle_commit($pdo, $admin_username) {
-    $data_to_commit = json_decode($_POST['data'], true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        echo json_encode(['success' => false, 'message' => 'Geçersiz veri formatı.']);
-        exit;
-    }
-
-    $processed_count = 0;
-    
+function commit_data($data, $pdo, $admin_username) {
     $pdo->beginTransaction();
     
-    foreach ($data_to_commit as $day_data) {
-        if (empty($day_data['date'])) {
-            continue;
-        }
-        
-        $sql_date = $day_data['date'];
-        
-        $pdo->prepare("DELETE FROM menus WHERE menu_date = ?")->execute([$sql_date]);
-        $pdo->prepare("DELETE FROM special_days WHERE event_date = ?")->execute([$sql_date]);
+    $stmt_get_meal = $pdo->prepare("SELECT id FROM meals WHERE name = ?");
+    $stmt_add_meal = $pdo->prepare("INSERT INTO meals (name) VALUES (?)");
+    $stmt_delete_menu = $pdo->prepare("DELETE FROM menus WHERE menu_date = ?");
+    $stmt_delete_special = $pdo->prepare("DELETE FROM special_days WHERE event_date = ?");
+    $stmt_add_menu = $pdo->prepare("INSERT INTO menus (menu_date, meal_id) VALUES (?, ?)");
+    $stmt_add_special = $pdo->prepare("INSERT INTO special_days (event_date, message) VALUES (?, ?)");
 
-        if ($day_data['is_special']) {
-            $message = $day_data['meals'][0]['name'] ?? 'Özel gün';
-            $stmt = $pdo->prepare("INSERT INTO special_days (event_date, message) VALUES (?, ?)");
-            $stmt->execute([$sql_date, $message]);
+    $imported_rows = 0;
+    foreach ($data as $day) {
+        $date_sql = DateTime::createFromFormat('d.m.Y', $day['date'])->format('Y-m-d');
+        
+        // Önceki kayıtları temizle
+        $stmt_delete_menu->execute([$date_sql]);
+        $stmt_delete_special->execute([$date_sql]);
+
+        if ($day['is_special']) {
+            $stmt_add_special->execute([$date_sql, $day['meals'][0]['name']]);
         } else {
-            foreach ($day_data['meals'] as $meal) {
-                $meal_name = $meal['name'];
-                if (empty($meal_name)) continue;
-
-                $stmt = $pdo->prepare("SELECT id FROM meals WHERE LOWER(name) = LOWER(?)");
-                $stmt->execute([$meal_name]);
-                $meal_id = $stmt->fetchColumn();
-
+            foreach ($day['meals'] as $meal) {
+                $stmt_get_meal->execute([$meal['name']]);
+                $meal_id = $stmt_get_meal->fetchColumn();
                 if (!$meal_id) {
-                    $stmt_insert = $pdo->prepare(
-                        "INSERT INTO meals (name, calories, ingredients, is_vegetarian, is_gluten_free, has_allergens) 
-                         VALUES (:name, :calories, :ingredients, :is_vegetarian, :is_gluten_free, :has_allergens)"
-                    );
-                    $stmt_insert->execute([
-                        ':name' => $meal_name,
-                        ':calories' => $meal['calories'] ?? null,
-                        ':ingredients' => $meal['ingredients'] ?? null,
-                        ':is_vegetarian' => $meal['is_vegetarian'] ?? 0,
-                        ':is_gluten_free' => $meal['is_gluten_free'] ?? 0,
-                        ':has_allergens' => $meal['has_allergens'] ?? 0,
-                    ]);
+                    $stmt_add_meal->execute([$meal['name']]);
                     $meal_id = $pdo->lastInsertId();
                 }
-                
-                $stmt_menu = $pdo->prepare("INSERT INTO menus (menu_date, meal_id) VALUES (?, ?)");
-                $stmt_menu->execute([$sql_date, $meal_id]);
+                $stmt_add_menu->execute([$date_sql, $meal_id]);
             }
         }
-        $processed_count++;
+        $imported_rows++;
     }
 
     $pdo->commit();
-    create_log($pdo, $admin_username, 'CSV_UPLOAD', 'Toplu Menü Yüklendi', "$processed_count günün menüsü CSV dosyası ile başarıyla işlendi.");
-    echo json_encode(['success' => true, 'message' => "$processed_count günün menüsü başarıyla kaydedildi."]);
+    log_action('csv_upload', $admin_username, "CSV dosyasından {$imported_rows} günlük menü içe aktarıldı.");
+    return $imported_rows;
+}
+
+
+// --- MAIN LOGIC ---
+header('Content-Type: application/json');
+$action = $_POST['action'] ?? '';
+
+try {
+    if ($action === 'analyze') {
+        $temp_file_path = handle_file_upload();
+        $preview_data = analyze_csv($temp_file_path, $pdo);
+        // Analiz başarılıysa, geçici dosyanın yolunu session'a kaydet
+        $_SESSION['csv_temp_file'] = $temp_file_path;
+        echo json_encode(['success' => true, 'data' => $preview_data]);
+
+    } elseif ($action === 'commit') {
+        if (!isset($_SESSION['csv_temp_file']) || !file_exists($_SESSION['csv_temp_file'])) {
+            throw new Exception('İşlem zaman aşımına uğradı veya geçici dosya bulunamadı. Lütfen tekrar yükleyin.');
+        }
+        $temp_file_path = $_SESSION['csv_temp_file'];
+        
+        // Analizi tekrar yapıp veriyi al (güvenlik için)
+        $data_to_commit = analyze_csv($temp_file_path, $pdo);
+        $count = commit_data($data_to_commit, $pdo, $admin_username);
+        
+        // İşlem bitince geçici dosyayı ve session'ı temizle
+        unlink($temp_file_path);
+        unset($_SESSION['csv_temp_file']);
+
+        echo json_encode(['success' => true, 'message' => "{$count} günlük menü başarıyla veritabanına kaydedildi."]);
+
+    } else {
+        throw new Exception('Geçersiz eylem.');
+    }
+} catch (Exception $e) {
+    // Hata durumunda geçici dosyayı sil
+    if (!empty($_SESSION['csv_temp_file']) && file_exists($_SESSION['csv_temp_file'])) {
+        unlink($_SESSION['csv_temp_file']);
+        unset($_SESSION['csv_temp_file']);
+    }
+    http_response_code(500);
+    error_log("CSV Upload Error: " . $e->getMessage());
+    die(json_encode(['success' => false, 'message' => $e->getMessage()]));
 }

@@ -1,61 +1,85 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 
-$report_type = $_GET['type'] ?? 'top_meals';
+header('Content-Type: application/json; charset=utf-8');
 
-if ($report_type === 'top_meals') {
-    try {
-        $stmt = $pdo->query("
-            SELECT 
-                ml.name, 
-                COUNT(m.meal_id) as count
-            FROM menus m
-            JOIN meals ml ON m.meal_id = ml.id
-            GROUP BY m.meal_id
-            ORDER BY count DESC
-            LIMIT 10
-        ");
-        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Chart.js'in beklediği formata dönüştür
-        $response = [
-            'labels' => array_column($data, 'name'),
-            'datasets' => [[
-                'label' => 'Kaç Kez Çıktı',
-                'data' => array_column($data, 'count'),
-                'backgroundColor' => [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)',
-                    'rgba(255, 159, 64, 0.2)',
-                    'rgba(199, 199, 199, 0.2)',
-                    'rgba(83, 102, 255, 0.2)',
-                    'rgba(40, 159, 64, 0.2)',
-                    'rgba(255, 99, 132, 0.2)'
-                ],
-                'borderColor' => [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(199, 199, 199, 1)',
-                    'rgba(83, 102, 255, 1)',
-                    'rgba(40, 159, 64, 1)',
-                    'rgba(255, 99, 132, 1)'
-                ],
-                'borderWidth' => 1
-            ]]
-        ];
+try {
+    // 1. Genel İstatistik Kartları
+    $stats_sql = "
+        SELECT
+            (SELECT COUNT(*) FROM feedback) as total_feedback,
+            (SELECT AVG(rating) FROM feedback) as average_rating,
+            (SELECT COUNT(*) FROM feedback WHERE status = 'yeni') as new_feedback_count
+    ";
+    $stats_stmt = $pdo->query($stats_sql);
+    $general_stats = $stats_stmt->fetch(PDO::FETCH_ASSOC);
+    $general_stats['average_rating'] = round($general_stats['average_rating'] ?? 0, 2);
 
-        echo json_encode(['success' => true, 'data' => $response]);
+    // 2. Ayın En Popüler Yemekleri (Bu ay içinde menüde en çok yer alan)
+    $top_meals_sql = "
+        SELECT m.name, COUNT(mn.meal_id) as count
+        FROM menus mn
+        JOIN meals m ON mn.meal_id = m.id
+        WHERE MONTH(mn.menu_date) = MONTH(CURRENT_DATE()) AND YEAR(mn.menu_date) = YEAR(CURRENT_DATE())
+        GROUP BY m.name
+        ORDER BY count DESC
+        LIMIT 10
+    ";
+    $top_meals_stmt = $pdo->query($top_meals_sql);
+    $top_meals = $top_meals_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $top_meals_chart_data = [
+        'labels' => array_column($top_meals, 'name'),
+        'datasets' => [[
+            'label' => 'Servis Sayısı',
+            'data' => array_column($top_meals, 'count'),
+            'backgroundColor' => '#007bff'
+        ]]
+    ];
 
-    } catch (PDOException $e) {
-        http_response_code(500);
-        error_log("Rapor verisi çekme hatası: " . $e->getMessage());
-        echo json_encode(['success' => false, 'message' => 'Rapor verileri alınırken bir hata oluştu.']);
+    // 3. Puan Dağılımı (Rating Distribution)
+    $ratings_sql = "SELECT rating, COUNT(*) as count FROM feedback GROUP BY rating ORDER BY rating ASC";
+    $ratings_stmt = $pdo->query($ratings_sql);
+    $ratings_data = $ratings_stmt->fetchAll(PDO::FETCH_ASSOC);
+    $ratings_chart_data = [
+        'labels' => array_map(function($r) { return $r['rating'] . ' Yıldız'; }, $ratings_data),
+        'datasets' => [[
+            'label' => 'Puan Sayısı',
+            'data' => array_column($ratings_data, 'count'),
+            'backgroundColor' => ['#dc3545', '#ffc107', '#fd7e14', '#28a745', '#007bff']
+        ]]
+    ];
+
+    // 4. Şikayetlerde Öne Çıkan Kelimeler (1 ve 2 yıldızlı yorumlardan)
+    $complaints_sql = "SELECT comment FROM feedback WHERE rating <= 2 AND comment IS NOT NULL AND comment != ''";
+    $complaints_stmt = $pdo->query($complaints_sql);
+    $comments = $complaints_stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    $stopwords = ['ama', 've', 'bir', 'çok', 'gibi', 'ile', 'için', 'bu', 'şu', 'o', 'da', 'de', 'ki', 'mi', 'mı', 'mu', 'mü', 'en', 'hep', 'hiç', 'sadece', 'ancak', 'daha', 'kadar', 'bence', 'böyle', 'şöyle', 'yok', 'evet', 'hayır', 'ben', 'sen', 'biz', 'siz', 'onlar', 'şey', 'her', 'bazı', 'kez', 'kere', 'defa', 'yani', 'zaten', 'ise', 'idi', 'oldu', 'olmuş', 'olan', 'olarak', 'çoktu', 'yoktu', 'vardı'];
+    $word_counts = [];
+    foreach ($comments as $comment) {
+        $words = preg_split('/[\s,.;!?]+/', strtolower($comment));
+        foreach ($words as $word) {
+            if (strlen($word) > 3 && !in_array($word, $stopwords)) {
+                $word_counts[$word] = ($word_counts[$word] ?? 0) + 1;
+            }
+        }
     }
+    arsort($word_counts);
+    $top_complaint_words = array_slice($word_counts, 0, 10);
+
+    echo json_encode([
+        'success' => true,
+        'data' => [
+            'general_stats' => $general_stats,
+            'top_meals_chart' => $top_meals_chart_data,
+            'ratings_chart' => $ratings_chart_data,
+            'complaint_words' => $top_complaint_words
+        ]
+    ]);
+
+} catch (PDOException $e) {
+    http_response_code(500);
+    error_log("Get report data error: " . $e->getMessage());
+    die(json_encode(['success' => false, 'message' => 'Rapor verileri alınırken bir veritabanı hatası oluştu: ' . $e->getMessage()]));
 }
+

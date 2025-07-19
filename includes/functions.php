@@ -2,32 +2,30 @@
 // includes/functions.php
 
 /**
- * Gelişmiş işlem kaydı (log) oluşturur.
+ * Veritabanına bir işlem kaydı (log) ekler.
  *
- * @param PDO $pdo Veritabanı bağlantı nesnesi.
- * @param string $username İşlemi yapan yönetici.
- * @param string $action_type Eylemin türü (örn: 'LOGIN', 'MEAL_UPDATE', 'DATE_DELETE').
- * @param string $action_summary Eylemin kısa özeti (örn: "Yemek Silindi").
- * @param string $details Eylemle ilgili detaylı bilgi (örn: "Yemek Adı: Mercimek Çorbası, ID: 15").
+ * @param string $action Yapılan işlemin açıklaması.
+ * @param string $admin_username İşlemi yapan yöneticinin kullanıcı adı.
+ * @param string $details İşlemle ilgili ek detaylar.
  */
-function create_log($pdo, $username, $action_type, $action_summary, $details = '') {
-    // Kullanıcının IP adresini al
-    $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'UNKNOWN';
+function log_action($action, $admin_username, $details = '') {
+    global $pdo; // db_connect.php'den gelen global pdo nesnesini kullan
+
+    // Kullanıcının gerçek IP adresini almayı dene
+    $ip_address = 'UNKNOWN';
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        $ip_address = $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    } elseif (!empty($_SERVER['REMOTE_ADDR'])) {
+        $ip_address = $_SERVER['REMOTE_ADDR'];
+    }
 
     try {
-        $stmt = $pdo->prepare(
-            "INSERT INTO logs (admin_username, ip_address, action_type, action_summary, details) 
-             VALUES (:username, :ip_address, :action_type, :action_summary, :details)"
-        );
-        $stmt->execute([
-            ':username' => $username,
-            ':ip_address' => $ip_address,
-            ':action_type' => $action_type,
-            ':action_summary' => $action_summary,
-            ':details' => $details
-        ]);
+        $stmt = $pdo->prepare("INSERT INTO logs (admin_username, ip_address, action, details) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$admin_username, $ip_address, $action, $details]);
     } catch (PDOException $e) {
         // Loglama hatası ana işlemi durdurmamalı, sadece hatayı kaydetmeli.
-        error_log("Loglama hatası: " . $e->getMessage());
+        error_log("Loglama Hatası: " . $e->getMessage());
     }
 }

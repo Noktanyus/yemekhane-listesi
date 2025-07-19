@@ -1,19 +1,12 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-session_start();
-require_once '../db_connect.php';
-require_once '../includes/functions.php';
+require_once __DIR__ . '/bootstrap.php';
 
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim.']);
-    exit;
-}
+// CSRF korumasını en başta uygula
+verify_csrf_token_and_exit();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Geçersiz istek metodu.']);
-    exit;
+    die(json_encode(['success' => false, 'message' => 'Geçersiz istek metodu.']));
 }
 
 $source_date = $_POST['source_date'] ?? null;
@@ -21,14 +14,12 @@ $target_date = $_POST['target_date'] ?? null;
 
 if (empty($source_date) || empty($target_date)) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Kaynak ve hedef tarihler boş olamaz.']);
-    exit;
+    die(json_encode(['success' => false, 'message' => 'Kaynak ve hedef tarihler boş olamaz.']));
 }
 
 if ($source_date === $target_date) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Kaynak ve hedef tarihler aynı olamaz.']);
-    exit;
+    die(json_encode(['success' => false, 'message' => 'Kaynak ve hedef tarihler aynı olamaz.']));
 }
 
 try {
@@ -42,8 +33,7 @@ try {
     if (empty($meal_ids)) {
         $pdo->rollBack();
         http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Kaynak tarihte kopyalanacak menü bulunamadı.']);
-        exit;
+        die(json_encode(['success' => false, 'message' => 'Kaynak tarihte kopyalanacak menü bulunamadı.']));
     }
 
     // 2. Hedef tarihteki mevcut menüyü (varsa) sil
@@ -63,15 +53,16 @@ try {
     $pdo->commit();
 
     // Loglama
-    $admin_username = $_SESSION['admin_username'] ?? 'Bilinmeyen';
     $summary = "$source_date menüsü $target_date tarihine kopyalandı.";
     log_action('menu_copy', $admin_username, $summary);
 
     echo json_encode(['success' => true, 'message' => 'Menü başarıyla kopyalandı!']);
 
 } catch (PDOException $e) {
-    $pdo->rollBack();
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     http_response_code(500);
     error_log("Menu copy error: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Veritabanı hatası nedeniyle menü kopyalanamadı.']);
+    die(json_encode(['success' => false, 'message' => 'Veritabanı hatası nedeniyle menü kopyalanamadı.']));
 }
