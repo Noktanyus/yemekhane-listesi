@@ -22,6 +22,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="/yemekhane-listesi/">
     <title>Admin Paneli - Yemek Listesi Yönetimi</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/admin.css">
 </head>
@@ -48,44 +49,66 @@ try {
         <div id="tab-date-management" class="tab-content active">
             <div class="date-management-layout">
                 <div class="week-view-container">
-                    <h3>Haftalık Bakış</h3>
-                    <div class="week-navigation">
-                        <button id="prev-week" class="week-nav-btn" title="Önceki Hafta">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                        </button>
-                        <span id="week-range"></span>
-                        <button id="next-week" class="week-nav-btn" title="Sonraki Hafta">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                        </button>
+                    <div class="card">
+                        <div class="card-header">Haftalık Bakış</div>
+                        <div class="card-body">
+                            <div class="week-navigation">
+                                <button id="prev-week" class="week-nav-btn" title="Önceki Hafta">‹</button>
+                                <span id="week-range"></span>
+                                <button id="next-week" class="week-nav-btn" title="Sonraki Hafta">›</button>
+                            </div>
+                            <div id="week-view-list"></div>
+                        </div>
                     </div>
-                    <div id="week-view-list"></div>
+                    <div class="card">
+                        <div class="card-header">Hızlı İşlemler</div>
+                        <div class="card-body">
+                            <form id="copy-menu-form">
+                                <h5>Menü Kopyala</h5>
+                                <p class="form-description">Bir tarihteki menüyü başka bir tarihe hızlıca kopyalayın.</p>
+                                <div class="form-row-flex">
+                                    <div class="form-group">
+                                        <label for="source-date">Kaynak Tarih</label>
+                                        <input type="date" id="source-date" name="source_date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="target-date">Hedef Tarih</label>
+                                        <input type="date" id="target-date" name="target_date" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-primary" style="width:100%;">Kopyala</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div class="edit-form-container">
-                    <form id="manage-date-form" class="manage-date-form">
-                        <h3 id="form-title">Tarih Seçin veya Oluşturun</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="menu-date">Tarih</label>
-                                <input type="date" id="menu-date" name="menu_date" required>
+                <div class="edit-form-container card">
+                    <div class="card-header" id="form-title">Tarih Seçin veya Oluşturun</div>
+                    <div class="card-body">
+                        <form id="manage-date-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="menu-date">Tarih</label>
+                                    <input type="date" id="menu-date" name="menu_date" required>
+                                </div>
+                                <div class="form-group checkbox-group">
+                                    <input type="checkbox" id="is-special-day" name="is_special_day">
+                                    <label for="is-special-day">Bu bir özel gün mü?</label>
+                                </div>
                             </div>
-                            <div class="form-group checkbox-group">
-                                <input type="checkbox" id="is-special-day" name="is_special_day">
-                                <label for="is-special-day">Bu bir özel gün mü?</label>
+                            <div id="meal-inputs-container">
+                                <label>O Günün Menüsü</label>
+                                <div id="meal-select-list"></div>
+                                <button type="button" id="btn-add-meal-to-menu" class="btn-add-meal">+ Yemek Ekle</button>
                             </div>
-                        </div>
-                        <div id="meal-inputs-container">
-                            <label>O Günün Menüsü</label>
-                            <div id="meal-select-list"></div>
-                            <button type="button" id="btn-add-meal-to-menu" class="btn-add-meal">+ Yemek Ekle</button>
-                        </div>
-                        <div id="special-day-container" class="hidden">
-                            <div class="form-group">
-                                <label for="special-day-message">Özel Gün Mesajı</label>
-                                <textarea id="special-day-message" name="special_day_message" placeholder="Örn: Bayram nedeniyle yemekhane kapalıdır."></textarea>
+                            <div id="special-day-container" class="hidden">
+                                <div class="form-group">
+                                    <label for="special-day-message">Özel Gün Mesajı</label>
+                                    <textarea id="special-day-message" name="special_day_message" placeholder="Örn: Bayram nedeniyle yemekhane kapalıdır."></textarea>
+                                </div>
                             </div>
-                        </div>
-                        <button type="submit" class="btn-submit">Değişiklikleri Kaydet</button>
-                    </form>
+                            <button type="submit" class="btn-submit">Değişiklikleri Kaydet</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -144,7 +167,6 @@ try {
                         <tr>
                             <th>Tarih ve Saat</th>
                             <th>Yönetici</th>
-                            <th>IP Adresi</th>
                             <th>Eylem Türü</th>
                             <th>Özet</th>
                             <th>Detaylar</th>

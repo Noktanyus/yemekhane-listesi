@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akdeniz Üniversitesi Yemekhane Menüsü</title>
+    <link rel="icon" href="data:,">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -16,8 +17,11 @@
 <div class="calendar-app">
     <div class="app-header">
         <div class="app-header-left">
-            <span class="app-icon"></span>
-            <p class="app-name">Yemek Menüsü</p>
+            <img src="assets/logo.png" alt="Akdeniz Üniversitesi Logo" class="app-logo">
+            <div class="header-text">
+                <p class="app-name">Akdeniz Üniversitesi</p>
+                <p class="app-subname">Sağlık, Kültür ve Spor Dairesi Başkanlığı Merkezi Yemekhane</p>
+            </div>
         </div>
         <div class="app-header-right">
             <button id="print-btn" class="action-btn">Yazdır</button>
@@ -41,6 +45,7 @@
                 </button>
             </div>
         </div>
+        <h3 class="meal-type-header">Öğle Yemeği</h3>
         <div id="calendar-grid-wrapper">
             <div id="calendar-grid"></div>
         </div>
@@ -58,6 +63,11 @@
         <h3 id="modal-title">Yemek Detayları</h3>
         <div id="modal-body"></div>
         <div id="modal-footer">
+            <div id="modal-legend">
+                <span class="legend-item">🌿 Vejetaryen</span>
+                <span class="legend-item">🚫🌾 Glütensiz</span>
+                <span class="legend-item">⚠️ Alerjen</span>
+            </div>
             <strong>Toplam Kalori: <span id="total-calories">0</span></strong>
         </div>
     </div>

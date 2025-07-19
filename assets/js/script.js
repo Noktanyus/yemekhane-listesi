@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    // Haftanın günlerini en başta bir kere ekle
     const weekdays = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
     weekdays.forEach(day => {
         const dayEl = document.createElement('div');
@@ -50,94 +49,87 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function renderCalendar(date) {
-        // Mevcut gün hücrelerini temizle (hafta başlıkları hariç)
         document.querySelectorAll('.calendar-day').forEach(cell => cell.remove());
-
         const year = date.getFullYear();
         const month = date.getMonth();
-        const menuData = await fetchMenuData(year, month);
-        const { menus, special_days } = menuData;
+        const { menus, special_days } = await fetchMenuData(year, month);
 
         monthYearEl.textContent = `${new Intl.DateTimeFormat('tr-TR', { month: 'long' }).format(date)} ${year}`;
 
         const firstDayOfMonth = new Date(year, month, 1);
         const lastDayOfMonth = new Date(year, month + 1, 0);
         const daysInMonth = lastDayOfMonth.getDate();
-        
-        let startingDay = firstDayOfMonth.getDay();
-        startingDay = (startingDay === 0) ? 6 : startingDay - 1; // Pzt=0, Sal=1, ..., Paz=6
+        let startingDay = (firstDayOfMonth.getDay() === 0) ? 6 : firstDayOfMonth.getDay() - 1;
 
-        // Ayın ilk gününden önceki boş hücreler
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = startingDay; i > 0; i--) {
             const day = prevMonthLastDay - i + 1;
-            const emptyCell = document.createElement('div');
-            emptyCell.classList.add('calendar-day', 'other-month');
-            const dayNumber = document.createElement('div');
-            dayNumber.classList.add('day-number');
-            dayNumber.textContent = day;
-            emptyCell.appendChild(dayNumber);
-            calendarGrid.appendChild(emptyCell);
+            calendarGrid.appendChild(createDayCell(day, 'other-month'));
         }
 
-        // Ayın günleri
         for (let day = 1; day <= daysInMonth; day++) {
-            const dayCell = document.createElement('div');
-            dayCell.classList.add('calendar-day');
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            dayCell.dataset.date = dateStr;
-
-            if (dateStr === todayStr) {
-                dayCell.classList.add('today');
-            }
-
-            const dayNumber = document.createElement('div');
-            dayNumber.classList.add('day-number');
-            dayNumber.textContent = day;
-            dayCell.appendChild(dayNumber);
-
-            const mealContainer = document.createElement('div');
-            mealContainer.classList.add('meal-container');
-
-            const hasSpecials = special_days[dateStr];
-            const hasMenus = menus[dateStr];
-
-            if (hasSpecials) {
-                const specialMessage = document.createElement('div');
-                specialMessage.classList.add('special-day-message');
-                specialMessage.textContent = special_days[dateStr];
-                mealContainer.appendChild(specialMessage);
-            } else if (hasMenus) {
-                dayCell.classList.add('has-menu');
-                const mealList = document.createElement('ul');
-                mealList.classList.add('meal-list');
-                menus[dateStr].forEach((meal) => {
-                    const mealItem = document.createElement('li');
-                    mealItem.textContent = meal.name;
-                    // Artık renk sınıfı eklemiyoruz, tek stil CSS'den gelecek
-                    mealList.appendChild(mealItem);
-                });
-                mealContainer.appendChild(mealList);
-            } else {
-                // Eğer hiç veri yoksa, hücreye özel sınıf ekle
-                dayCell.classList.add('is-empty');
-            }
-            dayCell.appendChild(mealContainer);
+            const dayCell = createDayCell(day, '', dateStr, menus, special_days);
+            if (dateStr === todayStr) dayCell.classList.add('today');
             calendarGrid.appendChild(dayCell);
         }
 
-        // Ayın son gününden sonraki boş hücreler
         const totalCells = startingDay + daysInMonth;
         const remainingCells = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
         for (let i = 1; i <= remainingCells; i++) {
-            const emptyCell = document.createElement('div');
-            emptyCell.classList.add('calendar-day', 'other-month');
-            const dayNumber = document.createElement('div');
-            dayNumber.classList.add('day-number');
-            dayNumber.textContent = i;
-            emptyCell.appendChild(dayNumber);
-            calendarGrid.appendChild(emptyCell);
+            calendarGrid.appendChild(createDayCell(i, 'other-month'));
         }
+    }
+
+    function createDayCell(day, type, dateStr, menus, special_days) {
+        const dayCell = document.createElement('div');
+        dayCell.classList.add('calendar-day');
+        if (type) {
+            dayCell.classList.add(type);
+        }
+        if (dateStr) dayCell.dataset.date = dateStr;
+
+        const dayNumber = document.createElement('div');
+        dayNumber.classList.add('day-number');
+        dayNumber.textContent = day;
+        dayCell.appendChild(dayNumber);
+
+        const mealContainer = document.createElement('div');
+        mealContainer.classList.add('meal-container');
+
+        const hasSpecials = special_days && special_days[dateStr];
+        const hasMenus = menus && menus[dateStr];
+
+        if (hasSpecials) {
+            const specialMessage = document.createElement('div');
+            specialMessage.classList.add('special-day-message');
+            let icon = '';
+            if (special_days[dateStr].toLowerCase().includes('bayram')) icon = '🎉 ';
+            else if (special_days[dateStr].toLowerCase().includes('tatil')) icon = '🇹🇷 ';
+            specialMessage.innerHTML = `<span class="special-day-icon">${icon}</span>${special_days[dateStr]}`;
+            mealContainer.appendChild(specialMessage);
+        } else if (hasMenus) {
+            dayCell.classList.add('has-menu');
+            const mealList = document.createElement('ul');
+            mealList.classList.add('meal-list');
+            menus[dateStr].meals.forEach(meal => {
+                const mealItem = document.createElement('li');
+                mealItem.textContent = meal.name;
+                mealList.appendChild(mealItem);
+            });
+            mealContainer.appendChild(mealList);
+
+            if (menus[dateStr].total_calories > 0) {
+                const caloriesDiv = document.createElement('div');
+                caloriesDiv.classList.add('daily-calories');
+                caloriesDiv.innerHTML = `🔥 ${menus[dateStr].total_calories} kcal`;
+                dayCell.appendChild(caloriesDiv);
+            }
+        } else {
+            dayCell.classList.add('is-empty');
+        }
+        dayCell.appendChild(mealContainer);
+        return dayCell;
     }
 
     async function showMealDetails(dateStr) {
@@ -154,16 +146,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 data.menu.forEach(meal => {
                     totalCalories += Number(meal.calories) || 0;
+                    
+                    const icons = [];
+                    if (meal.is_vegetarian == 1) icons.push('<span class="diet-icon" title="Vejetaryen">🌿</span>');
+                    if (meal.is_gluten_free == 1) icons.push('<span class="diet-icon" title="Glütensiz">🚫🌾</span>');
+                    if (meal.has_allergens == 1) icons.push('<span class="diet-icon" title="Alerjen İçerir">⚠️</span>');
+
                     const ingredientsHTML = meal.ingredients 
                         ? `<details><summary>İçeriği Göster</summary><p>${meal.ingredients}</p></details>` 
-                        : '<p>İçerik bilgisi girilmemiş.</p>';
+                        : '';
 
                     modalBody.innerHTML += `
                         <div class="meal-detail">
                             <div class="meal-header">
                                 <h4>${meal.name}</h4>
+                                <div class="diet-icons-container">${icons.join('')}</div>
                             </div>
-                            <p><strong>Kalori:</strong> ${meal.calories || 'Belirtilmemiş'}</p>
+                            <p><strong>Kalori:</strong> ${meal.calories || 'N/A'}</p>
                             ${ingredientsHTML}
                         </div>
                     `;
@@ -191,79 +190,55 @@ document.addEventListener('DOMContentLoaded', function() {
         datePickerModal.classList.remove('hidden');
     }
 
-    // Olay Dinleyicileri
-    prevMonthBtn.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar(currentDate);
-    });
-
-    nextMonthBtn.addEventListener('click', () => {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar(currentDate);
-    });
+    prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
+    nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
+    goToTodayBtn.addEventListener('click', () => { currentDate = new Date(); renderCalendar(currentDate); });
+    monthYearEl.addEventListener('click', openDatePicker);
 
     calendarGrid.addEventListener('click', (e) => {
-        const dayCell = e.target.closest('.calendar-day');
-        if (!dayCell || dayCell.classList.contains('other-month')) return;
-
-        if (dayCell.dataset.date === '2005-06-21') {
-            window.location.href = atob('aHR0cHM6Ly9ub2t0YW55dXMuY29tLz9ycD1ha2Rlbml6LXllbWVr');
-            return;
-        }
-
-        if (dayCell.classList.contains('has-menu')) {
-            showMealDetails(dayCell.dataset.date);
-        }
+        const dayCell = e.target.closest('.calendar-day.has-menu');
+        if (dayCell) showMealDetails(dayCell.dataset.date);
     });
 
     [detailsModal, datePickerModal].forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-            }
-        });
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
     });
     detailsModalCloseBtn.addEventListener('click', () => detailsModal.classList.add('hidden'));
     datePickerModalCloseBtn.addEventListener('click', () => datePickerModal.classList.add('hidden'));
 
-    monthYearEl.addEventListener('click', openDatePicker);
     datePickerForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const newYear = parseInt(selectYear.value);
-        const newMonth = parseInt(selectMonth.value);
-        currentDate = new Date(newYear, newMonth, 1);
+        currentDate = new Date(parseInt(selectYear.value), parseInt(selectMonth.value), 1);
         renderCalendar(currentDate);
         datePickerModal.classList.add('hidden');
     });
 
-    goToTodayBtn.addEventListener('click', () => {
-        currentDate = new Date();
-        renderCalendar(currentDate);
-    });
-
     printBtn.addEventListener('click', () => {
-        const monthName = monthYearEl.textContent;
-        const calendarGridContent = document.getElementById('calendar-grid').innerHTML;
-        
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>Yazdırılabilir Menü - ${monthName}</title>
+                    <title>Yazdırılabilir Menü - ${monthYearEl.textContent}</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
                     <link rel="stylesheet" href="assets/css/style.css">
                     <link rel="stylesheet" href="assets/css/print.css">
                 </head>
                 <body>
-                    <h1>${monthName} Yemek Menüsü</h1>
+                    <div class="print-header">
+                        <img src="assets/logo.png" class="app-logo" alt="Logo">
+                        <div class="header-text">
+                            <p class="app-name">Akdeniz Üniversitesi</p>
+                            <p class="app-subname">Sağlık, Kültür ve Spor Dairesi Başkanlığı Merkezi Yemekhane</p>
+                        </div>
+                    </div>
+                    <h1 id="print-month-year">${monthYearEl.textContent}</h1>
                     <div id="calendar-grid-wrapper">
-                        <div id="calendar-grid">${calendarGridContent}</div>
+                        <div id="calendar-grid">${calendarGrid.innerHTML}</div>
                     </div>
                     <script>
-                        // Tarayıcının stili işlemesi için kısa bir gecikme
-                        setTimeout(() => {
-                            window.print();
-                            window.close();
-                        }, 250);
+                        setTimeout(() => { window.print(); window.close(); }, 300);
                     </script>
                 </body>
             </html>

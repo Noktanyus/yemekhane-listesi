@@ -1,122 +1,52 @@
-/* assets/css/admin.css */
+/* assets/css/admin.css - Geliştirilmiş Yönetici Paneli Stilleri */
 
 /* Genel Admin Stilleri */
 :root {
-    --admin-primary: #2869ff;
+    --admin-primary: #007bff;
     --admin-secondary: #6c757d;
-    --admin-success: #198754;
+    --admin-success: #28a745;
     --admin-danger: #dc3545;
     --admin-warning: #ffc107;
-    --admin-light: #f5f8fa;
-    --admin-dark: #212529;
-    --admin-border-color: #e8e8e8;
-    --admin-background: #fff;
-    --admin-text: #333;
+    --admin-light: #f8f9fa;
+    --admin-dark: #343a40;
+    --admin-border-color: #dee2e6;
+    --admin-background: #ffffff;
+    --admin-text: #212529;
 }
 
-body {
-    background-color: var(--admin-light);
+body.admin-body {
+    background-image: none !important;
+    background-color: var(--admin-light) !important;
+    backdrop-filter: none !important;
     color: var(--admin-text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     margin: 0;
+    line-height: 1.5;
 }
 
 /* --- LOGIN SAYFASI --- */
-.login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 1rem;
-}
-.login-form {
-    background: var(--admin-background);
-    padding: 2.5rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-}
-.login-form h2 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: var(--admin-dark);
-}
-.login-form p {
-    margin-bottom: 2rem;
-    color: var(--admin-secondary);
-}
-.login-form .form-group {
-    margin-bottom: 1rem;
-    text-align: left;
-}
-.login-form .form-group input[type="text"],
-.login-form .form-group input[type="password"] {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    border: 1px solid var(--admin-border-color);
-    border-radius: 6px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-.login-form .form-group input:focus {
-    outline: none;
-    border-color: var(--admin-primary);
-    box-shadow: 0 0 0 3px rgba(40, 105, 255, 0.25);
-}
-.login-form .btn-submit {
-    width: 100%;
-    padding: 0.8rem;
-    margin-top: 1rem;
-}
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-}
-.form-error {
-    background-color: #f8d7da;
-    color: #842029;
-    padding: 1rem;
-    border: 1px solid #f5c2c7;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-    text-align: left;
-}
+.login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
+.login-form { background: var(--admin-background); padding: 2.5rem; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+.login-form h2 { margin-top: 0; margin-bottom: 0.5rem; color: var(--admin-dark); }
+.login-form p { margin-bottom: 2rem; color: var(--admin-secondary); }
+.login-form .form-group { margin-bottom: 1rem; text-align: left; }
+.login-form .form-group input[type="text"], .login-form .form-group input[type="password"] { width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--admin-border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+.login-form .form-group input:focus { outline: none; border-color: var(--admin-primary); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); }
+.login-form .btn-submit { width: 100%; padding: 0.8rem; margin-top: 1rem; }
+.form-error { background-color: #f8d7da; color: #721c24; padding: 1rem; border: 1px solid #f5c6cb; border-radius: 4px; margin-bottom: 1rem; text-align: left; }
 
 /* --- GENEL PANEL --- */
-.admin-header {
-    background-color: var(--admin-background);
-    color: var(--admin-dark);
-    padding: 1rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border-bottom: 1px solid var(--admin-border-color);
-}
+.admin-header { background-color: var(--admin-background); color: var(--admin-dark); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-bottom: 1px solid var(--admin-border-color); position: sticky; top: 0; z-index: 1020; }
 .admin-header h1 { margin: 0; font-size: 1.5rem; }
 .admin-header div { display: flex; align-items: center; gap: 1.5rem; }
 .logout-link { color: var(--admin-danger); text-decoration: none; font-weight: 500; }
 .logout-link:hover { text-decoration: underline; }
 
-.admin-container {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 2rem;
-}
+.admin-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
 
 /* Sekme Stilleri */
 .tabs { display: flex; border-bottom: 1px solid var(--admin-border-color); margin-bottom: 2rem; flex-wrap: wrap; }
-.tab-link { padding: 0.8rem 1.2rem; cursor: pointer; border: none; background: none; font-size: 1rem; font-weight: 500; color: var(--admin-secondary); border-bottom: 3px solid transparent; transition: all 0.2s ease-in-out; }
+.tab-link { padding: 0.8rem 1.2rem; cursor: pointer; border: none; background: none; font-size: 1rem; font-weight: 500; color: var(--admin-secondary); border-bottom: 3px solid transparent; transition: all 0.2s ease-in-out; margin-bottom: -1px; }
 .tab-link.active, .tab-link:hover { color: var(--admin-primary); border-bottom-color: var(--admin-primary); }
 .tab-content { display: none; }
 .tab-content.active { display: block; animation: fadeIn 0.5s; }
@@ -125,61 +55,33 @@ body {
 /* Form ve Buton Stilleri */
 .form-group { margin-bottom: 1.5rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-.form-group input[type="text"], .form-group input[type="date"], .form-group input[type="number"], .form-group input[type="file"], .form-group textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--admin-border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
-.form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--admin-primary); box-shadow: 0 0 0 3px rgba(40, 105, 255, 0.25); }
+.form-group input[type="text"], .form-group input[type="date"], .form-group input[type="number"], .form-group input[type="file"], .form-group textarea, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--admin-border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--admin-primary); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); }
 .form-group textarea { min-height: 100px; resize: vertical; }
 .hidden { display: none !important; }
 
-/* Modern Buton Stilleri */
 .btn-submit, .btn-primary, .btn-delete, .btn-edit, .btn-add-meal { padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: all 0.2s; text-decoration: none; display: inline-block; }
 .btn-submit, .btn-primary { background-color: var(--admin-primary); color: white; }
-.btn-submit:hover, .btn-primary:hover { background-color: #2058e0; box-shadow: 0 2px 8px rgba(40, 105, 255, 0.3); }
+.btn-submit:hover, .btn-primary:hover { background-color: #0069d9; box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3); }
 .btn-delete { background-color: var(--admin-danger); color: white; }
-.btn-delete:hover { background-color: #b02a37; box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3); }
-.btn-edit { background-color: #495057; color: white; }
-.btn-edit:hover { background-color: #343a40; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.btn-delete:hover { background-color: #c82333; box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3); }
+.btn-edit { background-color: var(--admin-secondary); color: white; }
+.btn-edit:hover { background-color: #5a6268; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .btn-add-meal { background-color: var(--admin-success); color: white; }
-.btn-add-meal:hover { background-color: #13653f; box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3); }
-button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
+.btn-add-meal:hover { background-color: #218838; box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3); }
+button:disabled { opacity: 0.65; cursor: not-allowed; box-shadow: none; }
 
-/* Tarih Yönetimi Formu İyileştirmeleri */
-.meal-input-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-.meal-input-group input {
-    flex-grow: 1; /* Input alanının genişlemesini sağla */
-}
-.btn-remove-meal {
-    background-color: #f8d7da;
-    color: #842029;
-    border: 1px solid #f5c2c7;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: all 0.2s;
-}
-.btn-remove-meal:hover {
-    background-color: var(--admin-danger);
-    color: white;
-    border-color: var(--admin-danger);
-}
+/* Kart ve Konteyner Stilleri */
+.card { background-color: var(--admin-background); border: 1px solid var(--admin-border-color); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+.card-header { padding: 1rem 1.5rem; background-color: #f8f9fa; border-bottom: 1px solid var(--admin-border-color); font-weight: 600; }
+.card-body { padding: 1.5rem; }
 
 /* Tarih Yönetimi */
-.date-management-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; }
+.date-management-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem; }
 .week-navigation { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 #week-range { text-align: center; font-weight: 600; font-size: 1.1rem; }
-#prev-week, #next-week { background: none; border: 1px solid var(--admin-border-color); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-#prev-week:hover, #next-week:hover { background-color: var(--admin-border-color); border-color: var(--admin-secondary); }
+.week-nav-btn { background: none; border: 1px solid var(--admin-border-color); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+.week-nav-btn:hover { background-color: #e9ecef; border-color: var(--admin-secondary); }
 .day-card { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--admin-border-color); border-radius: 6px; margin-bottom: 0.5rem; transition: box-shadow 0.2s, border-color 0.2s; }
 .day-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-color: var(--admin-primary); }
 .day-card .date-info { font-weight: bold; }
@@ -189,20 +91,20 @@ button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
 .table-container { overflow-x: auto; }
 #meals-table, #logs-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
 #meals-table th, #meals-table td, #logs-table th, #logs-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--admin-border-color); text-align: left; vertical-align: middle; }
-#meals-table tr:last-child td, #logs-table tr:last-child td { border-bottom: none; }
-#meals-table th, #logs-table th { background-color: var(--admin-light); font-weight: 600; }
+#meals-table tr:hover, #logs-table tr:hover { background-color: #f8f9fa; }
+#meals-table th, #logs-table th { background-color: #e9ecef; font-weight: 600; }
 #meals-table .actions-cell, #logs-table .actions-cell { display: flex; gap: 0.5rem; }
 
-/* Modern Modal Stilleri */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+/* Modal Stilleri */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1050; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
 .modal:not(.hidden) { opacity: 1; visibility: visible; }
-.modal-content { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: scale(0.95); transition: transform 0.3s; }
+.modal-content { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transform: scale(0.95); transition: transform 0.3s; }
 .modal:not(.hidden) .modal-content { transform: scale(1); }
 .modal-close { position: absolute; top: 1rem; right: 1rem; background: #f1f1f1; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .modal-close:hover { background: #e1e1e1; transform: rotate(90deg); }
 .modal-close::before { content: '×'; }
 
-/* Modern Checkbox Stilleri */
+/* Checkbox Stilleri */
 .checkbox-group { display: flex; align-items: center; gap: 0.75rem; user-select: none; }
 .checkbox-group input[type="checkbox"] { opacity: 0; width: 0; height: 0; position: absolute; }
 .checkbox-group label { position: relative; padding-left: 30px; cursor: pointer; font-weight: 500; }
@@ -211,15 +113,15 @@ button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
 .checkbox-group input[type="checkbox"]:checked + label::before { background: var(--admin-primary); border-color: var(--admin-primary); }
 .checkbox-group input[type="checkbox"]:checked + label::after { transform: translateY(-50%) scale(1); }
 
-/* --- BİLDİRİM (TOAST) SİSTEMİ --- */
-#toast-container { position: fixed; top: 20px; right: 20px; z-index: 1050; }
+/* Bildirim (Toast) Sistemi */
+#toast-container { position: fixed; top: 20px; right: 20px; z-index: 1055; }
 .toast { background-color: var(--admin-dark); color: white; padding: 1rem 1.5rem; margin-bottom: 1rem; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); opacity: 0; transform: translateX(100%); animation: slideIn 0.5s forwards, fadeOut 0.5s 4s forwards; }
 .toast.success { background-color: var(--admin-success); }
 .toast.error { background-color: var(--admin-danger); }
 @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
 @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateX(100%); } }
 
-/* --- MOBİL UYUMLULUK --- */
+/* Mobil Uyum */
 @media (max-width: 992px) {
     .admin-header { flex-direction: column; gap: 1rem; padding: 1rem; }
     .admin-container { margin: 1rem; padding: 1rem; }

@@ -20,7 +20,7 @@ if (isset($_GET['date'])) {
             $response['is_special'] = true;
             $response['message'] = $special_day['message'];
         } else {
-            $response['is_special'] = false; // Menü varsa bile bunun özel gün olmadığını belirt
+            $response['is_special'] = false;
             $stmt = $pdo->prepare(
                 "SELECT ml.id, ml.name, ml.calories, ml.ingredients, ml.is_vegetarian, ml.is_gluten_free, ml.has_allergens
                  FROM menus m
@@ -33,7 +33,6 @@ if (isset($_GET['date'])) {
         }
     } catch (PDOException $e) {
         http_response_code(500);
-        // Hata mesajını logla, kullanıcıya genel bir mesaj göster
         error_log("get_menu_events.php (single date) error: " . $e->getMessage());
         echo json_encode(['error' => 'Sunucu hatası oluştu.'], JSON_UNESCAPED_UNICODE);
         exit;
@@ -53,24 +52,35 @@ $calendar_response = [
 ];
 
 try {
-    // Menüleri çek
+    // Menüleri ve toplam kaloriyi çek
     $stmt = $pdo->prepare(
-        "SELECT m.menu_date, ml.name 
+        "SELECT 
+            m.menu_date, 
+            ml.name,
+            (SELECT SUM(calories) FROM meals WHERE id IN (SELECT meal_id FROM menus WHERE menu_date = m.menu_date)) as total_calories
          FROM menus m 
          JOIN meals ml ON m.meal_id = ml.id 
          WHERE YEAR(m.menu_date) = ? AND MONTH(m.menu_date) = ? 
          ORDER BY m.menu_date, ml.id"
     );
     $stmt->execute([$year, $month]);
-    $menus = $stmt->fetchAll();
-    foreach ($menus as $menu) {
-        $calendar_response['menus'][$menu['menu_date']][] = ['name' => $menu['name']];
+    $menus_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($menus_data as $menu_item) {
+        $date = $menu_item['menu_date'];
+        if (!isset($calendar_response['menus'][$date])) {
+            $calendar_response['menus'][$date] = [
+                'meals' => [],
+                'total_calories' => $menu_item['total_calories']
+            ];
+        }
+        $calendar_response['menus'][$date]['meals'][] = ['name' => $menu_item['name']];
     }
 
     // Özel günleri çek
-    $stmt = $pdo->prepare("SELECT event_date, message FROM special_days WHERE YEAR(event_date) = ? AND MONTH(event_date) = ?");
-    $stmt->execute([$year, $month]);
-    $calendar_response['special_days'] = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+    $stmt_special = $pdo->prepare("SELECT event_date, message FROM special_days WHERE YEAR(event_date) = ? AND MONTH(event_date) = ?");
+    $stmt_special->execute([$year, $month]);
+    $calendar_response['special_days'] = $stmt_special->fetchAll(PDO::FETCH_KEY_PAIR);
 
 } catch (PDOException $e) {
     http_response_code(500);

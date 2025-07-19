@@ -121,6 +121,41 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleDateFormFields();
         };
 
+        const copyMenuForm = tab.querySelector('#copy-menu-form');
+        if (copyMenuForm) {
+            copyMenuForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const submitButton = copyMenuForm.querySelector('button[type="submit"]');
+                const sourceDate = copyMenuForm.querySelector('#source-date').value;
+                const targetDate = copyMenuForm.querySelector('#target-date').value;
+
+                if (!sourceDate || !targetDate) {
+                    showToast('Lütfen kaynak ve hedef tarihleri seçin.', 'error');
+                    return;
+                }
+                if (sourceDate === targetDate) {
+                    showToast('Kaynak ve hedef tarihler aynı olamaz.', 'error');
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.textContent = 'Kopyalanıyor...';
+                try {
+                    const result = await api.post('copy_menu.php', new FormData(copyMenuForm));
+                    showToast(result.message, result.success ? 'success' : 'error');
+                    if (result.success) {
+                        renderWeekView(new Date(targetDate + 'T00:00:00'));
+                        copyMenuForm.reset();
+                    }
+                } catch (error) {
+                    showToast(error.message || 'Menü kopyalanamadı.', 'error');
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Kopyala';
+                }
+            });
+        }
+
         const loadDateIntoForm = async (dateStr) => {
             resetForm();
             dateInput.value = dateStr;
@@ -376,13 +411,13 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const result = await api.get('get_logs.php');
                 if (result.success) {
-                    logsTableBody.innerHTML = result.data.map(log => `<tr><td data-label="Tarih">${log.created_at_formatted}</td><td data-label="Yönetici">${log.admin_username}</td><td data-label="IP Adresi">${log.ip_address}</td><td data-label="Eylem Türü"><span class="log-action-type">${log.action_type}</span></td><td data-label="Özet">${log.action_summary}</td><td data-label="Detaylar">${log.details}</td></tr>`).join('');
+                    logsTableBody.innerHTML = result.data.map(log => `<tr><td data-label="Tarih">${log.created_at_formatted}</td><td data-label="Yönetici">${log.admin_username}</td><td data-label="Eylem Türü"><span class="log-action-type">${log.action_type}</span></td><td data-label="Özet">${log.action_summary}</td><td data-label="Detaylar">${log.details || ''}</td></tr>`).join('');
                 } else {
-                    logsTableBody.innerHTML = `<tr><td colspan="6">${result.message}</td></tr>`;
+                    logsTableBody.innerHTML = `<tr><td colspan="5">${result.message}</td></tr>`;
                 }
                 logsLoaded = true;
             } catch (error) {
-                logsTableBody.innerHTML = `<tr><td colspan="6">${error.message || 'Kayıtlar yüklenemedi.'}</td></tr>`;
+                logsTableBody.innerHTML = `<tr><td colspan="5">${error.message || 'Kayıtlar yüklenemedi.'}</td></tr>`;
             }
         };
         document.addEventListener('tabchanged', e => { if (e.detail.tabId === 'tab-logs') loadLogs(); });
