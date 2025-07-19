@@ -1,21 +1,17 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Takvim Elementleri
+    // Elementler
     const calendarGrid = document.getElementById('calendar-grid');
+    const mobileListView = document.getElementById('mobile-list-view');
     const monthYearEl = document.getElementById('calendar-month-year');
     const prevMonthBtn = document.getElementById('prev-month-btn');
     const nextMonthBtn = document.getElementById('next-month-btn');
     const loadingSpinner = document.getElementById('loading-spinner');
     const goToTodayBtn = document.getElementById('go-to-today-btn');
-    const printBtn = document.getElementById('print-btn');
-
-    // Yemek Detay Modalı Elementleri
     const detailsModal = document.getElementById('meal-details-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
     const totalCaloriesEl = document.getElementById('total-calories');
     const detailsModalCloseBtn = detailsModal.querySelector('.modal-close');
-
-    // Tarih Seçici Modalı Elementleri
     const datePickerModal = document.getElementById('date-picker-modal');
     const datePickerForm = document.getElementById('date-picker-form');
     const selectMonth = document.getElementById('select-month');
@@ -25,14 +21,27 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentDate = new Date();
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
     const weekdays = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-    weekdays.forEach(day => {
-        const dayEl = document.createElement('div');
-        dayEl.classList.add('weekday-header');
-        dayEl.textContent = day;
-        calendarGrid.appendChild(dayEl);
-    });
+
+    // --- Modal Kontrol Fonksiyonları ---
+    function openModal(modal) {
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    function closeModal(modal) {
+        if (modal) {
+            modal.classList.add('hidden');
+            // Sadece tüm modallar kapalıysa body class'ını kaldır
+            const anyModalOpen = document.querySelector('.modal:not(.hidden)');
+            if (!anyModalOpen) {
+                document.body.classList.remove('modal-open');
+            }
+        }
+    }
+    // --- Bitiş ---
 
     async function fetchMenuData(year, month) {
         loadingSpinner.classList.remove('hidden');
@@ -49,7 +58,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function renderCalendar(date) {
-        document.querySelectorAll('.calendar-day').forEach(cell => cell.remove());
+        // Önceki verileri temizle
+        calendarGrid.innerHTML = '';
+        mobileListView.innerHTML = '';
+
+        // Başlıkları ekle (sadece masaüstü için)
+        weekdays.forEach(day => {
+            const dayEl = document.createElement('div');
+            dayEl.classList.add('weekday-header');
+            dayEl.textContent = day;
+            calendarGrid.appendChild(dayEl);
+        });
+
         const year = date.getFullYear();
         const month = date.getMonth();
         const { menus, special_days } = await fetchMenuData(year, month);
@@ -61,19 +81,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const daysInMonth = lastDayOfMonth.getDate();
         let startingDay = (firstDayOfMonth.getDay() === 0) ? 6 : firstDayOfMonth.getDay() - 1;
 
+        // Önceki ayın günlerini ekle (sadece masaüstü)
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = startingDay; i > 0; i--) {
             const day = prevMonthLastDay - i + 1;
             calendarGrid.appendChild(createDayCell(day, 'other-month'));
         }
 
+        // Bu ayın günlerini ekle
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayCell = createDayCell(day, '', dateStr, menus, special_days);
-            if (dateStr === todayStr) dayCell.classList.add('today');
+            const isToday = dateStr === todayStr;
+            
+            // Masaüstü için hücre oluştur
+            const dayCell = createDayCell(day, '', dateStr, menus, special_days, isToday);
             calendarGrid.appendChild(dayCell);
+
+            // Mobil için kart oluştur
+            const mobileCard = createMobileDayCard(day, dateStr, menus, special_days, isToday);
+            mobileListView.appendChild(mobileCard);
         }
 
+        // Sonraki ayın günlerini ekle (sadece masaüstü)
         const totalCells = startingDay + daysInMonth;
         const remainingCells = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
         for (let i = 1; i <= remainingCells; i++) {
@@ -81,12 +110,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function createDayCell(day, type, dateStr, menus, special_days) {
+    function createDayCell(day, type, dateStr, menus, special_days, isToday) {
         const dayCell = document.createElement('div');
         dayCell.classList.add('calendar-day');
-        if (type) {
-            dayCell.classList.add(type);
-        }
+        if (type) dayCell.classList.add(type);
+        if (isToday) dayCell.classList.add('today');
         if (dateStr) dayCell.dataset.date = dateStr;
 
         const dayNumber = document.createElement('div');
@@ -101,13 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasMenus = menus && menus[dateStr];
 
         if (hasSpecials) {
-            const specialMessage = document.createElement('div');
-            specialMessage.classList.add('special-day-message');
-            let icon = '';
-            if (special_days[dateStr].toLowerCase().includes('bayram')) icon = '🎉 ';
-            else if (special_days[dateStr].toLowerCase().includes('tatil')) icon = '🇹🇷 ';
-            specialMessage.innerHTML = `<span class="special-day-icon">${icon}</span>${special_days[dateStr]}`;
-            mealContainer.appendChild(specialMessage);
+            mealContainer.innerHTML = `<div class="special-day-message">${special_days[dateStr]}</div>`;
         } else if (hasMenus) {
             dayCell.classList.add('has-menu');
             const mealList = document.createElement('ul');
@@ -118,18 +140,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 mealList.appendChild(mealItem);
             });
             mealContainer.appendChild(mealList);
-
             if (menus[dateStr].total_calories > 0) {
-                const caloriesDiv = document.createElement('div');
-                caloriesDiv.classList.add('daily-calories');
-                caloriesDiv.innerHTML = `🔥 ${menus[dateStr].total_calories} kcal`;
-                dayCell.appendChild(caloriesDiv);
+                dayCell.innerHTML += `<div class="daily-calories">🔥 ${menus[dateStr].total_calories} kcal</div>`;
             }
-        } else {
+        } else if (!type) {
             dayCell.classList.add('is-empty');
         }
         dayCell.appendChild(mealContainer);
         return dayCell;
+    }
+
+    function createMobileDayCard(day, dateStr, menus, special_days, isToday) {
+        const card = document.createElement('div');
+        card.classList.add('mobile-day-card');
+        if (isToday) card.classList.add('today');
+        card.dataset.date = dateStr;
+
+        const dateObj = new Date(dateStr + 'T00:00:00');
+        const weekday = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(dateObj);
+
+        const header = document.createElement('div');
+        header.classList.add('mobile-day-header');
+        if (isToday) header.classList.add('today');
+        header.innerHTML = `<span class="date">${day} ${monthYearEl.textContent.split(' ')[0]}</span><span class="weekday">${weekday}</span>`;
+        card.appendChild(header);
+
+        const hasSpecials = special_days && special_days[dateStr];
+        const hasMenus = menus && menus[dateStr];
+
+        if (hasSpecials) {
+            card.innerHTML += `<div class="special-day-message">${special_days[dateStr]}</div>`;
+        } else if (hasMenus) {
+            card.classList.add('has-menu');
+            const mealList = document.createElement('ul');
+            mealList.classList.add('meal-list');
+            menus[dateStr].meals.forEach(meal => {
+                const mealItem = document.createElement('li');
+                mealItem.textContent = meal.name;
+                mealList.appendChild(mealItem);
+            });
+            card.appendChild(mealList);
+        } else {
+            card.classList.add('is-empty');
+            card.innerHTML += '<span>Menü bilgisi bulunmuyor.</span>';
+        }
+        return card;
     }
 
     async function showMealDetails(dateStr) {
@@ -140,40 +195,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             if (data.menu && data.menu.length > 0) {
                 modalTitle.textContent = new Date(dateStr + 'T00:00:00').toLocaleDateString('tr-TR', { dateStyle: 'full' });
-                
                 let totalCalories = 0;
                 modalBody.innerHTML = '';
-
                 data.menu.forEach(meal => {
                     totalCalories += Number(meal.calories) || 0;
-                    
                     const icons = [];
                     if (meal.is_vegetarian == 1) icons.push('<span class="diet-icon" title="Vejetaryen">🌿</span>');
                     if (meal.is_gluten_free == 1) icons.push('<span class="diet-icon" title="Glütensiz">🚫🌾</span>');
                     if (meal.has_allergens == 1) icons.push('<span class="diet-icon" title="Alerjen İçerir">⚠️</span>');
-
-                    const ingredientsHTML = meal.ingredients 
-                        ? `<details><summary>İçeriği Göster</summary><p>${meal.ingredients}</p></details>` 
-                        : '';
-
-                    modalBody.innerHTML += `
-                        <div class="meal-detail">
-                            <div class="meal-header">
-                                <h4>${meal.name}</h4>
-                                <div class="diet-icons-container">${icons.join('')}</div>
-                            </div>
-                            <p><strong>Kalori:</strong> ${meal.calories || 'N/A'}</p>
-                            ${ingredientsHTML}
-                        </div>
-                    `;
+                    const ingredientsHTML = meal.ingredients ? `<details><summary>İçeriği Göster</summary><p>${meal.ingredients}</p></details>` : '';
+                    modalBody.innerHTML += `<div class="meal-detail"><div class="meal-header"><h4>${meal.name}</h4><div class="diet-icons-container">${icons.join('')}</div></div><p><strong>Kalori:</strong> ${meal.calories || 'N/A'}</p>${ingredientsHTML}</div>`;
                 });
-
                 totalCaloriesEl.textContent = `${totalCalories} kcal`;
-                detailsModal.classList.remove('hidden');
+                openModal(detailsModal);
             }
-        } catch (error) {
-            console.error('Yemek detayı hatası:', error);
-        }
+        } catch (error) { console.error('Yemek detayı hatası:', error); }
     }
 
     function openDatePicker() {
@@ -187,75 +223,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         selectMonth.value = currentDate.getMonth();
         selectYear.value = currentDate.getFullYear();
-        datePickerModal.classList.remove('hidden');
+        openModal(datePickerModal);
     }
 
+    async function loadSiteInfo() {
+        const officialsContainer = document.getElementById('officials-info');
+        if (!officialsContainer) return;
+        try {
+            const response = await fetch('api/get_site_info.php');
+            const result = await response.json();
+            if (result.success && result.data) {
+                let html = '';
+                for (const [title, name] of Object.entries(result.data)) {
+                    if (name) {
+                        if (title.includes('E-posta')) {
+                            html += `<div class="official-item"><a href="mailto:${name}" class="name">${name}</a><span class="title">${title}</span></div>`;
+                        } else {
+                            html += `<div class="official-item"><span class="name">${name}</span><span class="title">${title}</span></div>`;
+                        }
+                    }
+                }
+                officialsContainer.innerHTML = html;
+            }
+        } catch (error) { console.error('Yetkili bilgileri alınırken hata:', error); }
+    }
+
+    // Event Listeners
     prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
     nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
     goToTodayBtn.addEventListener('click', () => { currentDate = new Date(); renderCalendar(currentDate); });
     monthYearEl.addEventListener('click', openDatePicker);
-
     calendarGrid.addEventListener('click', (e) => {
         const dayCell = e.target.closest('.calendar-day.has-menu');
         if (dayCell) showMealDetails(dayCell.dataset.date);
     });
-
-    [detailsModal, datePickerModal].forEach(modal => {
-        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+    mobileListView.addEventListener('click', (e) => {
+        const dayCard = e.target.closest('.mobile-day-card.has-menu');
+        if (dayCard) showMealDetails(dayCard.dataset.date);
     });
-    detailsModalCloseBtn.addEventListener('click', () => detailsModal.classList.add('hidden'));
-    datePickerModalCloseBtn.addEventListener('click', () => datePickerModal.classList.add('hidden'));
+    
+    // Geri Bildirim Modalı
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackBtn = document.getElementById('feedback-btn');
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackModalCloseBtn = feedbackModal.querySelector('.modal-close');
+    feedbackBtn.addEventListener('click', () => openModal(feedbackModal));
+    
+    // Tüm modallar için ortak kapatma eventleri
+    [detailsModal, datePickerModal, feedbackModal].forEach(modal => {
+        if (modal) {
+            const closeBtn = modal.querySelector('.modal-close');
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+            if(closeBtn) closeBtn.addEventListener('click', () => closeModal(modal));
+        }
+    });
 
     datePickerForm.addEventListener('submit', (e) => {
         e.preventDefault();
         currentDate = new Date(parseInt(selectYear.value), parseInt(selectMonth.value), 1);
         renderCalendar(currentDate);
-        datePickerModal.classList.add('hidden');
-    });
-
-    printBtn.addEventListener('click', () => {
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Yazdırılabilir Menü - ${monthYearEl.textContent}</title>
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
-                    <link rel="stylesheet" href="assets/css/style.css">
-                    <link rel="stylesheet" href="assets/css/print.css">
-                </head>
-                <body>
-                    <div class="print-header">
-                        <img src="assets/logo.png" class="app-logo" alt="Logo">
-                        <div class="header-text">
-                            <p class="app-name">Akdeniz Üniversitesi</p>
-                            <p class="app-subname">Sağlık, Kültür ve Spor Dairesi Başkanlığı Merkezi Yemekhane</p>
-                        </div>
-                    </div>
-                    <h1 id="print-month-year">${monthYearEl.textContent}</h1>
-                    <div id="calendar-grid-wrapper">
-                        <div id="calendar-grid">${calendarGrid.innerHTML}</div>
-                    </div>
-                    <script>
-                        setTimeout(() => { window.print(); window.close(); }, 300);
-                    </script>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-    });
-
-    // Geri Bildirim Modalı İşlevselliği
-    const feedbackModal = document.getElementById('feedback-modal');
-    const feedbackBtn = document.getElementById('feedback-btn');
-    const feedbackForm = document.getElementById('feedback-form');
-    const feedbackModalCloseBtn = feedbackModal.querySelector('.modal-close');
-
-    feedbackBtn.addEventListener('click', () => feedbackModal.classList.remove('hidden'));
-    feedbackModalCloseBtn.addEventListener('click', () => feedbackModal.classList.add('hidden'));
-    feedbackModal.addEventListener('click', (e) => {
-        if (e.target === feedbackModal) feedbackModal.classList.add('hidden');
+        closeModal(datePickerModal);
     });
 
     feedbackForm.addEventListener('submit', async (e) => {
@@ -263,17 +290,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const submitButton = feedbackForm.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.textContent = 'Gönderiliyor...';
-
         try {
-            const response = await fetch('api/submit_feedback.php', {
-                method: 'POST',
-                body: new FormData(feedbackForm)
-            });
+            const response = await fetch('api/submit_feedback.php', { method: 'POST', body: new FormData(feedbackForm) });
             const result = await response.json();
             if (result.success) {
-                feedbackModal.classList.add('hidden');
+                closeModal(feedbackModal);
                 feedbackForm.reset();
-                // İsteğe bağlı: Başarı mesajı gösterilebilir.
                 alert('Geri bildiriminiz için teşekkür ederiz!');
             } else {
                 throw new Error(result.message || 'Bir hata oluştu.');
@@ -286,33 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    async function loadSiteInfo() {
-        const officialsContainer = document.getElementById('officials-info');
-        if (!officialsContainer) return;
-
-        try {
-            const response = await fetch('api/get_site_info.php');
-            const result = await response.json();
-
-            if (result.success && result.data) {
-                let html = '';
-                for (const [title, name] of Object.entries(result.data)) {
-                    if (name) {
-                        if (title.includes('E-posta')) {
-                            html += `<div class="official-item"><span class="title">${title}:</span> <a href="mailto:${name}" class="value">${name}</a></div>`;
-                        } else {
-                            html += `<div class="official-item"><span class="title">${title}:</span> <span class="value">${name}</span></div>`;
-                        }
-                    }
-                }
-                officialsContainer.innerHTML = html;
-            }
-        } catch (error) {
-            console.error('Yetkili bilgileri alınırken hata:', error);
-            officialsContainer.innerHTML = '<p>Yetkili bilgileri yüklenemedi.</p>';
-        }
-    }
-
+    // Initial Load
     renderCalendar(currentDate);
     loadSiteInfo();
 });

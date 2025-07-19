@@ -1,8 +1,9 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
-    # Dosya veya dizin değilse, isteği index.php'ye yönlendir
+    RewriteBase /yemekhane-listesi/
+
+    # Var olan bir dosya veya dizin değilse, isteği index.php'ye yönlendir
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ index.php [L,QSA]
+    RewriteRule . /yemekhane-listesi/index.php [L]
 </IfModule>

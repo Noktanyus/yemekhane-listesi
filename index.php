@@ -28,8 +28,6 @@
         </div>
         <div class="app-header-right">
             <button id="feedback-btn" class="action-btn">Geri Bildirim</button>
-            <button id="print-btn" class="action-btn">Yazdır</button>
-            <a href="admin/index.php" class="action-btn-primary">Admin Paneli</a>
         </div>
     </div>
     <div class="app-content">
@@ -50,8 +48,11 @@
             </div>
         </div>
         <h3 class="meal-type-header">Öğle Yemeği</h3>
-        <div id="calendar-grid-wrapper">
+        <div id="calendar-grid-wrapper" class="hidden-mobile">
             <div id="calendar-grid"></div>
+        </div>
+        <div id="mobile-list-view" class="hidden-desktop">
+            <!-- Mobil için liste görünümü JS ile dolacak -->
         </div>
         <div id="loading-spinner" class="hidden"><div class="spinner"></div></div>
     </div>
@@ -60,7 +61,7 @@
             <!-- JS ile dolacak -->
         </div>
         <div class="footer-bottom">
-            Akdeniz Üniversitesi Bilgi İşlem Daire Başkanlığı
+            © 2025 Akdeniz Üniversitesi Bilgi İşlem Daire Başkanlığı
         </div>
     </footer>
 </div>

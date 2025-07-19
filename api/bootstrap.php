@@ -14,12 +14,15 @@ require_once __DIR__ . '/../config.php';
 session_start();
 header('Content-Type: application/json');
 
-// Güvenlik: Sadece giriş yapmış adminlerin API'leri kullanabildiğinden emin ol.
+// Güvenlik: Normalde burada admin kontrolü yapılır, ancak bazı API'ler halka açık olmalı.
+// Bu kontrol, her API dosyasının kendi içinde ihtiyaca göre yapılmalıdır.
+/*
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     http_response_code(403); // Forbidden
     echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim. Lütfen tekrar giriş yapın.']);
     exit;
 }
+*/
 
 // Gerekli dosyaları dahil et
 require_once __DIR__ . '/../db_connect.php';
