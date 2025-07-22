@@ -11,7 +11,13 @@
  */
 function log_action($action_type, $admin_username, $details = '')
 {
+    require_once __DIR__ . '/../db_connect.php';
     global $pdo;
+    
+    // Eğer $pdo tanımlı değilse, bağlantıyı yeniden kur
+    if (!isset($pdo) || $pdo === null) {
+        require_once __DIR__ . '/../db_connect.php';
+    }
 
     $ip_address = 'UNKNOWN';
     if (!empty($_SERVER['HTTP_CLIENT_IP'])) {

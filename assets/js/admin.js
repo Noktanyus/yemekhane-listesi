@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clone.querySelector('input').value = value;
             mealSelectList.appendChild(clone);
         };
-        
+
         const resetForm = () => {
             dateForm.reset();
             mealSelectList.innerHTML = '';
@@ -147,7 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await api.post('manage_date.php', new FormData(dateForm));
                 showToast(result.message, 'success');
                 renderWeekView(new Date(dateInput.value + 'T00:00:00'));
-            } catch (error) { showToast(error.message, 'error');
+            } catch (error) {
+                showToast(error.message, 'error');
             } finally { submitButton.disabled = false; }
         });
         renderWeekView(currentWeekDate);
@@ -204,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`Yemek başarıyla ${id ? 'güncellendi' : 'eklendi'}.`, 'success');
                 closeModal();
                 refreshAllMealData();
-            } catch (error) { showToast(error.message, 'error');
+            } catch (error) {
+                showToast(error.message, 'error');
             } finally { submitButton.disabled = false; }
         });
 
@@ -255,7 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`).join('');
                 uploadArea.classList.add('hidden');
                 previewContainer.classList.remove('hidden');
-            } catch (error) { showToast(error.message, 'error');
+            } catch (error) {
+                showToast(error.message, 'error');
             } finally { submitButton.disabled = false; }
         });
 
@@ -269,7 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(result.message, 'success');
                 resetView();
                 refreshAllMealData();
-            } catch (error) { showToast(error.message, 'error');
+            } catch (error) {
+                showToast(error.message, 'error');
             } finally { btnCommit.disabled = false; }
         });
         btnCancel.addEventListener('click', resetView);
@@ -381,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const imageViewerModal = document.getElementById('image-viewer-modal');
         const imageViewerImg = document.getElementById('image-viewer-img');
         const downloadBtn = document.getElementById('download-btn');
-        
+
         // Görüntüleyici için durum değişkenleri
         let currentZoom = 1;
         let isDragging = false;
@@ -443,12 +447,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Image Viewer Modal Logic (Sürükleme ve Zoom) ---
         imageViewerModal.querySelector('.modal-close').addEventListener('click', () => imageViewerModal.classList.add('hidden'));
-        
+
         document.getElementById('zoom-in-btn').addEventListener('click', () => {
             currentZoom = Math.min(currentZoom + 0.2, 3);
             applyTransform();
         });
-        
+
         document.getElementById('zoom-out-btn').addEventListener('click', () => {
             currentZoom = Math.max(currentZoom - 0.2, 0.4);
             if (currentZoom <= 1) { // Eğer normal boyuta veya daha küçüğe dönerse, sürüklemeyi sıfırla
@@ -480,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isDragging = false;
             imageViewerImg.classList.remove('is-dragging');
         });
-        
+
         replyModal.querySelector('.modal-close').addEventListener('click', () => { replyModal.classList.add('hidden'); replyForm.reset(); });
         document.getElementById('btn-use-template').addEventListener('click', () => {
             const name = replyForm.querySelector('#reply-feedback-name').value;
@@ -496,7 +500,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 replyModal.classList.add('hidden');
                 replyForm.reset();
                 loadFeedback(currentPage);
-            } catch (error) { showToast(error.message, 'error');
+            } catch (error) {
+                showToast(error.message, 'error');
             } finally { submitButton.disabled = false; }
         });
 
@@ -541,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.querySelector('.tab-content[data-page="logs"]');
         if (!container) return;
         const logsTableBody = container.querySelector('#logs-table tbody');
-        if(!logsTableBody) return;
+        if (!logsTableBody) return;
         const loadLogs = async () => {
             try {
                 const result = await api.get('get_logs.php');
@@ -580,7 +585,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const result = await api.post('manage_officials.php', new FormData(form));
                 showToast(result.message, 'success');
-            } catch (error) { showToast(error.message, 'error');
+            } catch (error) {
+                showToast(error.message, 'error');
             } finally { submitButton.disabled = false; }
         });
         loadSettings();
@@ -602,8 +608,210 @@ document.addEventListener('DOMContentLoaded', () => {
         if (page === 'reports') initReportsModule();
         if (page === 'logs') initLogsModule();
         if (page === 'officials') initOfficialsModule();
+        if (page === 'meal_prices') initMealPricesModule();
 
         refreshAllMealData();
+    };
+
+    // --- MEAL PRICES MODULE ---
+    const initMealPricesModule = () => {
+        const container = document.querySelector('.tab-content[data-page="meal_prices"]');
+        if (!container) return;
+
+        const mealPricesTable = container.querySelector('#meal-prices-table tbody');
+        const mealPriceModal = document.querySelector('#meal-price-modal');
+        const mealPriceForm = document.querySelector('#meal-price-form');
+        const modalTitle = document.querySelector('#price-modal-title');
+        const btnAddNewPrice = container.querySelector('#btn-add-new-price');
+
+        if (!mealPricesTable || !mealPriceModal || !mealPriceForm || !btnAddNewPrice) return;
+
+        // Yemek ücretlerini getir
+        const loadMealPrices = async () => {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'get_all');
+                formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+                const result = await api.post('manage_meal_prices.php', formData);
+
+                if (result.success) {
+                    mealPricesTable.innerHTML = '';
+
+                    result.data.forEach(price => {
+                        const row = mealPricesTable.insertRow();
+
+                        row.insertCell(0).textContent = price.group_name;
+                        row.insertCell(1).textContent = price.description || '';
+                        row.insertCell(2).textContent = parseFloat(price.price).toFixed(2) + ' TL';
+
+                        const statusCell = row.insertCell(3);
+                        statusCell.innerHTML = price.is_active == 1 ?
+                            '<span class="badge bg-success">Aktif</span>' :
+                            '<span class="badge bg-secondary">Pasif</span>';
+
+                        row.insertCell(4).textContent = price.sort_order;
+
+                        const actionsCell = row.insertCell(5);
+                        actionsCell.innerHTML = `
+                            <button class="btn btn-sm btn-primary btn-edit" data-id="${price.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger btn-delete" data-id="${price.id}" data-name="${price.group_name}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `;
+                    });
+
+                    // Event listeners for edit and delete buttons
+                    container.querySelectorAll('.btn-edit').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const priceId = this.getAttribute('data-id');
+                            editPrice(priceId);
+                        });
+                    });
+
+                    container.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const priceId = this.getAttribute('data-id');
+                            const priceName = this.getAttribute('data-name');
+                            deletePrice(priceId, priceName);
+                        });
+                    });
+                } else {
+                    showToast('Yemek ücretleri yüklenemedi: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                showToast('Bir hata oluştu.', 'error');
+            }
+        };
+
+        // Yeni ücret ekleme modalını aç
+        btnAddNewPrice.addEventListener('click', function () {
+            modalTitle.textContent = 'Yeni Yemek Ücreti Ekle';
+            mealPriceForm.reset();
+            document.querySelector('#price-id').value = '';
+            document.querySelector('#price-is-active').checked = true;
+            openModal(mealPriceModal);
+        });
+
+        // Ücret düzenleme modalını aç
+        const editPrice = async (priceId) => {
+            try {
+                const formData = new FormData();
+                formData.append('action', 'get_all');
+                formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+                const result = await api.post('manage_meal_prices.php', formData);
+
+                if (result.success) {
+                    const price = result.data.find(p => p.id == priceId);
+                    if (price) {
+                        modalTitle.textContent = 'Yemek Ücreti Düzenle';
+                        document.querySelector('#price-id').value = price.id;
+                        document.querySelector('#price-group-name').value = price.group_name;
+                        document.querySelector('#price-description').value = price.description || '';
+                        document.querySelector('#price-amount').value = price.price;
+                        document.querySelector('#price-sort-order').value = price.sort_order;
+                        document.querySelector('#price-is-active').checked = price.is_active == 1;
+                        openModal(mealPriceModal);
+                    }
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                showToast('Bir hata oluştu.', 'error');
+            }
+        };
+
+        // Ücret silme
+        const deletePrice = async (priceId, priceName) => {
+            if (confirm(`"${priceName}" ücretini silmek istediğinize emin misiniz?`)) {
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'delete');
+                    formData.append('price_id', priceId);
+                    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+                    const result = await api.post('manage_meal_prices.php', formData);
+
+                    if (result.success) {
+                        showToast(result.message, 'success');
+                        loadMealPrices();
+                    } else {
+                        showToast(result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Hata:', error);
+                    showToast('Bir hata oluştu.', 'error');
+                }
+            }
+        };
+
+        // Form gönderimi
+        mealPriceForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            try {
+                const formData = new FormData(this);
+                const priceId = container.querySelector('#price-id').value;
+
+                formData.append('action', priceId ? 'update' : 'add');
+
+                const result = await api.post('manage_meal_prices.php', formData);
+
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    closeModal(mealPriceModal);
+                    loadMealPrices();
+                } else {
+                    showToast(result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                showToast('Bir hata oluştu.', 'error');
+            }
+        });
+
+        // Modal kapatma event listener'ları
+        if (mealPriceModal) {
+            const closeBtn = mealPriceModal.querySelector('.modal-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => closeModal(mealPriceModal));
+            }
+
+            // Modal arka planına tıklayınca kapatma
+            mealPriceModal.addEventListener('click', (e) => {
+                if (e.target === mealPriceModal) {
+                    closeModal(mealPriceModal);
+                }
+            });
+        }
+
+        // Modal kapatma fonksiyonu
+        window.closeMealPriceModal = function () {
+            closeModal(mealPriceModal);
+        };
+
+        // Sayfa yüklendiğinde ücretleri getir
+        loadMealPrices();
+    };
+
+    // Modal fonksiyonları (eğer tanımlı değilse)
+    const openModal = (modal) => {
+        if (modal) {
+            modal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        }
+    };
+
+    const closeModal = (modal) => {
+        if (modal) {
+            modal.classList.add('hidden');
+            if (!document.querySelector('.modal:not(.hidden)')) {
+                document.body.classList.remove('modal-open');
+            }
+        }
     };
 
     initPage();

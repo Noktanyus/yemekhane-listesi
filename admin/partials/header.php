@@ -40,6 +40,7 @@ $csrf_token = generate_csrf_token();
                     <li><a href="index.php?page=reports" class="tab-link" data-tab="reports"><i class="fas fa-chart-bar fa-fw"></i> Raporlar</a></li>
                     <li><a href="index.php?page=logs" class="tab-link" data-tab="logs"><i class="fas fa-clipboard-list fa-fw"></i> İşlem Kayıtları</a></li>
                     <li><a href="index.php?page=officials" class="tab-link" data-tab="officials"><i class="fas fa-users-cog fa-fw"></i> Yetkililer</a></li>
+                    <li><a href="index.php?page=meal_prices" class="tab-link" data-tab="meal_prices"><i class="fas fa-money-bill-wave fa-fw"></i> Yemek Ücretleri</a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">

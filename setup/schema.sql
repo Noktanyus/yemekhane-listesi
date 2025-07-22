@@ -11,7 +11,7 @@ USE akdeniz_yemekhane;
 
 -- Tabloları oluşturmadan önce, varsa eski sürümleri güvenli bir şekilde kaldır.
 SET FOREIGN_KEY_CHECKS=0;
-DROP TABLE IF EXISTS `logs`, `feedback`, `special_days`, `menus`, `site_settings`, `meals`, `admins`;
+DROP TABLE IF EXISTS `logs`, `feedback`, `special_days`, `menus`, `site_settings`, `meals`, `meal_prices`, `admins`;
 SET FOREIGN_KEY_CHECKS=1;
 
 -- Admin Kullanıcıları Tablosu
@@ -94,4 +94,17 @@ CREATE TABLE `site_settings` (
   `setting_key` varchar(50) NOT NULL PRIMARY KEY,
   `setting_value` text DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Yemek Ücretleri Tablosu
+CREATE TABLE IF NOT EXISTS `meal_prices` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `group_name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

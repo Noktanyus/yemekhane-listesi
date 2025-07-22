@@ -27,6 +27,7 @@
             </div>
         </div>
         <div class="app-header-right">
+            <button id="meal-prices-btn" class="action-btn">Yemek Ücretleri</button>
             <button id="feedback-btn" class="action-btn">Geri Bildirim</button>
         </div>
     </div>
@@ -126,6 +127,37 @@
                     <span class="legend-item">⚠️ Alerjen</span>
                 </div>
                 <strong>Toplam Kalori: <span id="total-calories">0</span></strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yemek Ücretleri Modalı -->
+<div id="meal-prices-modal" class="modal hidden">
+    <div class="modal-content">
+        <button class="modal-close">&times;</button>
+        <h3>Yemek Ücretleri</h3>
+        <div class="meal-prices-content">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Bilgi:</strong> Personel kart ücretlerindeki farklılık, Akdeniz Üniversitesi Yönetim Kurulu Kararı ve 09 Ocak 2025 tarih, 32777 sayılı resmi gazetede, Hazine ve Maliye Bakanlığı tarafından yayımlanan merkezi bütçe uygulama tebliğinde belirtilen ek gösterge sınıflamalarına uyularak oluşturulmaktadır.
+            </div>
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Uyarı:</strong> Mezun olacak durumdaki öğrencilerimiz bakiye yüklemelerini mezuniyet tarihinde bitirebilecek kadar yükleme yapmalıdır. Bakiye iadesi yapılmamaktadır.
+            </div>
+            <div class="meal-prices-table-container">
+                <table class="meal-prices-table">
+                    <thead>
+                        <tr>
+                            <th>Yemek Yiyen Grup Özellikleri</th>
+                            <th>Günlük Ücret</th>
+                        </tr>
+                    </thead>
+                    <tbody id="meal-prices-list">
+                        <!-- JS ile dolacak -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

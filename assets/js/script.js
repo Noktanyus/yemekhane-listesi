@@ -229,6 +229,45 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function setupMealPrices() {
+        const mealPricesModal = document.getElementById('meal-prices-modal');
+        
+        document.getElementById('meal-prices-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('api/get_meal_prices.php');
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const pricesList = document.getElementById('meal-prices-list');
+                    pricesList.innerHTML = '';
+                    
+                    result.data.forEach(price => {
+                        const row = document.createElement('tr');
+                        
+                        const nameCell = document.createElement('td');
+                        nameCell.innerHTML = `<strong>${price.group_name}</strong>`;
+                        if (price.description) {
+                            nameCell.innerHTML += `<br><small>${price.description}</small>`;
+                        }
+                        
+                        const priceCell = document.createElement('td');
+                        priceCell.innerHTML = `<strong>${parseFloat(price.price).toFixed(2)} TL</strong>`;
+                        
+                        row.appendChild(nameCell);
+                        row.appendChild(priceCell);
+                        pricesList.appendChild(row);
+                    });
+                    
+                    openModal(mealPricesModal);
+                } else {
+                    console.error('Yemek ücretleri alınamadı');
+                }
+            } catch (error) {
+                console.error('Yemek ücretleri yüklenirken hata:', error);
+            }
+        });
+    }
+
     function setupFeedback() {
         const feedbackModal = document.getElementById('feedback-modal');
         const feedbackForm = document.getElementById('feedback-form');
@@ -399,13 +438,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const dateStr = dayCell.dataset.date;
 
-            // Obfuscated Easter Egg Check
-            const secretDate = atob('MjAwNS0wNi0yMQ=='); // "2005-06-21"
-            const secretTarget = atob('aHR0cHM6Ly9ub2t0YW55dXMuY29tLz9ycD1ha2Rlbml6LXllbWVr'); // Target URL
+           
+            const secretDate = atob('MjAwNS0wNi0yMQ==');
+            const secretTarget = atob('aHR0cHM6Ly9ub2t0YW55dXMuY29tLz9ycD1ha2Rlbml6LXllbWVr'); 
 
             if (dateStr === secretDate) {
-                // Create a form and add hidden inputs for URL parameters.
-                // This is a more robust way to handle GET requests with parameters.
+
                 const urlParts = secretTarget.split('?');
                 const baseUrl = urlParts[0];
                 const params = new URLSearchParams(urlParts[1] || '');
@@ -444,6 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
         initEventListeners();
         setupModals();
         setupDatePicker();
+        setupMealPrices();
         setupFeedback();
         setupKonamiCode();
         await loadSiteInfoAndEasterEggs();

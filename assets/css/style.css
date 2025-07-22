@@ -428,4 +428,143 @@ body.modal-open {
         color: var(--light-color);
         background-color: #f9f9f9;
     }
+}/
+* Yemek Ücretleri Tablosu Stilleri */
+.meal-prices-content {
+    padding: 1rem 0;
+}
+
+.meal-prices-table-container {
+    margin-top: 1.5rem;
+    overflow-x: auto;
+}
+
+.meal-prices-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.meal-prices-table th,
+.meal-prices-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.meal-prices-table th {
+    background-color: var(--app-content-secondary-color);
+    font-weight: bold;
+    color: var(--main-color);
+}
+
+.meal-prices-table tr:nth-child(even) {
+    background-color: var(--zebra-stripe-color);
+}
+
+.meal-prices-table td:last-child {
+    text-align: right;
+    font-weight: bold;
+    color: var(--action-color);
+    font-size: 16px;
+}
+
+.meal-prices-table td:first-child {
+    font-weight: 600;
+}
+
+.meal-prices-table small {
+    color: var(--secondary-color);
+    font-size: 12px;
+    display: block;
+    margin-top: 4px;
+}
+
+.alert {
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+
+.alert-info {
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.alert i {
+    margin-right: 0.5rem;
+}/* Y
+emek Ücretleri Modal Özel Stilleri */
+#meal-prices-modal .modal-content {
+    max-width: 800px;
+    max-height: 90vh;
+    padding: 0;
+}
+
+#meal-prices-modal h3 {
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 10;
+    padding: 20px 20px 15px 20px;
+    margin: 0;
+    border-bottom: 2px solid var(--border-color);
+    border-radius: 8px 8px 0 0;
+}
+
+#meal-prices-modal .meal-prices-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    max-height: calc(90vh - 80px);
+}
+
+#meal-prices-modal .meal-prices-table-container {
+    margin-top: 0;
+}
+
+/* Scroll bar stilleri */
+#meal-prices-modal .meal-prices-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#meal-prices-modal .meal-prices-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#meal-prices-modal .meal-prices-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#meal-prices-modal .meal-prices-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Mobil uyumluluk */
+@media (max-width: 768px) {
+    #meal-prices-modal .modal-content {
+        max-width: 95%;
+        max-height: 95vh;
+    }
+    
+    #meal-prices-modal .meal-prices-content {
+        max-height: calc(95vh - 80px);
+        padding: 15px;
+    }
+    
+    #meal-prices-modal h3 {
+        padding: 15px;
+        font-size: 18px;
+    }
 }

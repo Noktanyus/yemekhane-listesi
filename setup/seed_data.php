@@ -8,7 +8,7 @@ ini_set('display_errors', 1);
 
 try {
     // --- BÖLÜM 1: Tabloları Temizleme (Transaction DIŞINDA) ---
-    $tables_to_clean = ['logs', 'feedback', 'special_days', 'menus', 'site_settings', 'meals'];
+    $tables_to_clean = ['logs', 'feedback', 'special_days', 'menus', 'site_settings', 'meals', 'meal_prices'];
     
     $pdo->exec("SET FOREIGN_KEY_CHECKS=0;");
     foreach ($tables_to_clean as $table) {
@@ -117,6 +117,23 @@ try {
         foreach ($logs as $log) {
             $stmt->execute($log);
         }
+    }
+
+    // 7. Yemek Ücretleri Ekle (`meal_prices`)
+    $meal_prices = [
+        ['ÖĞRENCİ YEMEK ÜCRETİ', 'Öğrenci yemek ücreti', 40.00, 1, 1],
+        ['GÜN İÇİNDE 2. ÖĞÜN YEMEK ÜCRETİ', 'Gün içinde 2. öğün yemek ücreti', 70.00, 1, 2],
+        ['SÖZL. PERSONEL (4/B) 0-600 EK GÖSTERGE', 'Sözleşmeli personel 0-600 ek gösterge', 80.00, 1, 3],
+        ['601-2800 (DAHİL) EK GÖSTERGE', 'Personel 601-2800 ek gösterge', 85.00, 1, 4],
+        ['2801-3000 (DAHİL) EK GÖSTERGE', 'Personel 2801-3000 ek gösterge', 95.00, 1, 5],
+        ['3001-4200 (DAHİL) EK GÖSTERGE', 'Personel 3001-4200 ek gösterge', 100.00, 1, 6],
+        ['4201-5400 (DAHİL) EK GÖSTERGE', 'Personel 4201-5400 ek gösterge', 110.00, 1, 7],
+        ['5401-7000 ve ÜSTÜ EK GÖSTERGE', 'Personel 5401-7000 ve üstü ek gösterge', 120.00, 1, 8],
+        ['PERSONEL İÇİN GÜN İCİNDE TEKRAR GEÇİŞLER', 'Personel için gün içinde tekrar geçişler', 220.00, 1, 9]
+    ];
+    $stmt = $pdo->prepare("INSERT INTO `meal_prices` (group_name, description, price, is_active, sort_order) VALUES (?, ?, ?, ?, ?)");
+    foreach ($meal_prices as $price) {
+        $stmt->execute($price);
     }
 
     $pdo->commit();

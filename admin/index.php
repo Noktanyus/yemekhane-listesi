@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>";
 
 // Modül dosyalarını ve içeriklerini yönet
-$all_pages = ['menu', 'meals', 'upload', 'feedback', 'reports', 'logs', 'officials'];
+$all_pages = ['menu', 'meals', 'upload', 'feedback', 'reports', 'logs', 'officials', 'meal_prices'];
 
 foreach ($all_pages as $p) {
     // Aktif sayfa ile eşleşiyorsa 'active' class'ı ekle, değilse ekleme.
