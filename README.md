@@ -261,7 +261,7 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 **Noktanyus**
 - GitHub: [@Noktanyus](https://github.com/Noktanyus)
-- Email: [your-email@example.com](mailto:your-email@example.com)
+- Email: [yunustughan0@gmail.com](mailto:yunustughan0@gmail.com)
 
 ## 🙏 Teşekkürler
 
